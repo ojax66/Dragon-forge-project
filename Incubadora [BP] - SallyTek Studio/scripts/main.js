@@ -1,362 +1,231 @@
 import { world, system, ItemStack } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
 
 /* =========================================================
    INCUBADORA - SallyTek Studio
 
-   Blocos customizados ainda nao suportam container proprio
-   (nao existe componente "minecraft:inventory" de bloco nesta
-   versao), entao a interface e desenhada por JSON UI em cima
-   do formulario de servidor (ActionFormData). O RP substitui
-   "server_form.long_form": quando o titulo do formulario e
-   UI_MARKER, a tela da Incubadora aparece no lugar do
-   formulario padrao; qualquer outro titulo continua usando a
-   tela vanilla.
+   Bloco customizado ainda nao tem container proprio, entao o
+   inventario vive numa entidade invisivel (sallytek:incubator)
+   colocada dentro do bloco. Clicar no bloco acerta a entidade
+   e abre o container dela.
 
-   A ordem dos botoes abaixo PRECISA bater com os
-   "collection_index" de ui/incubator_screen.json.
+   O nome dado no summon vira o titulo do container, e o
+   resource pack usa esse titulo em ui/chest_screen.json pra
+   trocar a tela de bau pela tela da Incubadora. Qualquer outro
+   bau do mundo continua com a tela normal.
+
+   A ordem dos slots abaixo PRECISA bater com a grade de
+   ui/incubator_screen.json.
    ========================================================= */
 
 const BLOCK_ID = "sallytek:incubator";
-const REGISTRY_KEY = "sallytek:incubator_locations";
-const DATA_KEY = "sallytek:incubator_data";
+const ENTITY_ID = "sallytek:incubator";
 
-// Titulo-marcador lido pelo binding do JSON UI. Nao traduza.
-const UI_MARKER = "sallytek:incubator_ui";
+// Titulo do container. E tambem a chave de traducao no .lang e o valor
+// comparado em ui/chest_screen.json. Nao traduza aqui.
+const CONTAINER_NAME = "sallytek.incubator.block";
 
-// Indices dos botoes do formulario (espelham ui/incubator_screen.json)
-const BTN_FUEL = 0;
-const BTN_ARROW = 1;
-const BTN_INPUT = 2;
-const BTN_OUTPUT = 3;
-const BTN_CLOSE = 4;
-const BTN_INVENTORY = 5;   // 5..40 = os 36 slots do inventario do jogador
-const INVENTORY_SLOTS = 36;
+// Slots do container da entidade
+const SLOT_FUEL_GAUGE = 0;   // item-display: barra de lava
+const SLOT_FUEL = 1;         // balde de lava
+const SLOT_INPUT = 2;        // item a chocar
+const SLOT_PROGRESS = 3;     // item-display: barra de progresso
+const SLOT_OUTPUT = 4;       // resultado
 
-const ARROW_STAGES = 7;       // incubator_arrow_0 .. _6
-const FUEL_PIPS = 10;         // incubator_fuel_0 .. _10
+const ARROW_STAGES = 7;      // sallytek:incubator_arrow_0 .. _6
+const FUEL_PIPS = 10;        // sallytek:incubator_fuel_0 .. _10
+
 const TOTAL_HATCH_TICKS = 2000;                       // 100s pra chocar
-const TICKS_PER_PIP = TOTAL_HATCH_TICKS / FUEL_PIPS;  // 200 ticks (10s) por balde
+const TICKS_PER_PIP = TOTAL_HATCH_TICKS / FUEL_PIPS;  // 200 ticks por balde
 const MAX_FUEL_TICKS = FUEL_PIPS * TICKS_PER_PIP;
+const TICKS_PER_STEP = 20;                            // o timer da entidade bate 1x por segundo
 
 const FUEL_ITEM = "minecraft:lava_bucket";
 const EMPTY_BUCKET = "minecraft:bucket";
+
+const PROP_FUEL = "sallytek:fuel";
+const PROP_PROGRESS = "sallytek:progress";
 
 // Tabela de receitas: item de entrada -> item de saida. Edite/adicione a vontade.
 const HATCH_RECIPES = {
 	"minecraft:egg": "minecraft:chicken_spawn_egg"
 };
 
-// Icone mostrado nos slots da UI. Itens fora desta tabela aparecem como
-// slot vazio, entao adicione aqui todo item que entrar em HATCH_RECIPES.
-const ITEM_TEXTURES = {
-	"minecraft:egg": "textures/items/egg",
-	"minecraft:chicken_spawn_egg": "textures/items/egg_chicken",
-	"minecraft:lava_bucket": "textures/items/bucket_lava",
-	"minecraft:bucket": "textures/items/bucket_empty"
-};
+const GAUGE_PREFIX = "sallytek:incubator_";
 
-function textureFor(itemId) {
-	return itemId ? ITEM_TEXTURES[itemId] : undefined;
+function isGaugeItem(itemId) {
+	return typeof itemId === "string" && itemId.startsWith(GAUGE_PREFIX);
 }
 
-function isUsable(itemId) {
-	return itemId === FUEL_ITEM || Object.prototype.hasOwnProperty.call(HATCH_RECIPES, itemId);
+/* ------------------------------ colocar/quebrar ---------------------------- */
+
+function summonCore(dimension, loc) {
+	// O nome vira o titulo do container - e o que o JSON UI compara.
+	dimension.spawnEntity(ENTITY_ID, { x: loc.x + 0.5, y: loc.y, z: loc.z + 0.5 })
+		.nameTag = CONTAINER_NAME;
 }
 
-/* ------------------------------- persistencia ------------------------------ */
-
-function loadRegistry() {
-	const raw = world.getDynamicProperty(REGISTRY_KEY);
-	if (!raw) return [];
-	try { return JSON.parse(raw); } catch { return []; }
+function findCore(dimension, loc) {
+	return dimension.getEntitiesAtBlockLocation(loc).find((e) => e.typeId === ENTITY_ID);
 }
-function saveRegistry(list) {
-	world.setDynamicProperty(REGISTRY_KEY, JSON.stringify(list));
-}
-function loadData() {
-	const raw = world.getDynamicProperty(DATA_KEY);
-	if (!raw) return {};
-	try { return JSON.parse(raw); } catch { return {}; }
-}
-function saveData(data) {
-	world.setDynamicProperty(DATA_KEY, JSON.stringify(data));
-}
-function keyFor(dimensionId, loc) {
-	return `${dimensionId}:${loc.x},${loc.y},${loc.z}`;
-}
-function defaultState() {
-	return { progressTicks: 0, fuelTicks: 0, queuedItem: null, outputItem: null };
-}
-function readState(key) {
-	const data = loadData();
-	return data[key] ?? defaultState();
-}
-function writeState(key, state) {
-	const data = loadData();
-	data[key] = state;
-	saveData(data);
-}
-
-function addIncubator(dimensionId, loc) {
-	const list = loadRegistry();
-	const k = keyFor(dimensionId, loc);
-	if (!list.includes(k)) {
-		list.push(k);
-		saveRegistry(list);
-	}
-}
-function removeIncubator(dimensionId, loc) {
-	const list = loadRegistry();
-	const k = keyFor(dimensionId, loc);
-	const idx = list.indexOf(k);
-	if (idx !== -1) {
-		list.splice(idx, 1);
-		saveRegistry(list);
-	}
-	const data = loadData();
-	const state = data[k];
-	if (state) {
-		delete data[k];
-		saveData(data);
-	}
-	return state;
-}
-
-/* --------------------------------- eventos -------------------------------- */
 
 world.afterEvents.playerPlaceBlock.subscribe((ev) => {
 	const block = ev.block;
-	if (block.typeId === BLOCK_ID) {
-		addIncubator(ev.dimension.id, block.location);
-		block.setPermutation(block.permutation.withState("sallytek:lit", false));
+	if (block.typeId !== BLOCK_ID) return;
+	block.setPermutation(block.permutation.withState("sallytek:lit", false));
+	if (!findCore(ev.dimension, block.location)) {
+		summonCore(ev.dimension, block.location);
 	}
 });
 
 world.afterEvents.playerBreakBlock.subscribe((ev) => {
 	if (ev.brokenBlockPermutation.type.id !== BLOCK_ID) return;
-	const state = removeIncubator(ev.dimension.id, ev.block.location);
-	if (!state) return;
-	// devolve o que estava dentro, igual a uma fornalha quebrada
-	const loc = ev.block.location;
-	for (const itemId of [state.queuedItem, state.outputItem]) {
-		if (!itemId) continue;
-		try { ev.dimension.spawnItem(new ItemStack(itemId, 1), loc); } catch { /* item invalido */ }
+	const core = findCore(ev.dimension, ev.block.location);
+	if (!core) return;
+
+	// Devolve o conteudo (menos os itens-display) antes de sumir com a entidade.
+	const container = core.getComponent("minecraft:inventory")?.container;
+	if (container) {
+		for (let slot = 0; slot < container.size; slot++) {
+			const item = container.getItem(slot);
+			if (item && !isGaugeItem(item.typeId)) {
+				ev.dimension.spawnItem(item, ev.block.location);
+			}
+			container.setItem(slot, undefined);
+		}
+	}
+	core.remove();
+});
+
+// Bloco colocado antes desta versao (ou entidade perdida): recria a entidade
+// no primeiro clique. Com a entidade no lugar, o clique vai nela e nao aqui.
+world.afterEvents.playerInteractWithBlock.subscribe((ev) => {
+	const block = ev.block;
+	if (block.typeId !== BLOCK_ID) return;
+	if (!findCore(block.dimension, block.location)) {
+		summonCore(block.dimension, block.location);
+		ev.player.onScreenDisplay.setActionBar("§eIncubadora religada. Clique de novo pra abrir.");
 	}
 });
 
-// Clicar no bloco abre a interface (e cancela colocar bloco/usar item na mao).
-world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
-	if (ev.block.typeId !== BLOCK_ID) return;
-	ev.cancel = true;
-	const player = ev.player;
-	const dimensionId = ev.block.dimension.id;
-	// copia os valores: o objeto do evento nao vale mais dentro do system.run
-	const loc = { x: ev.block.location.x, y: ev.block.location.y, z: ev.block.location.z };
-	const key = keyFor(dimensionId, loc);
-	system.run(() => {
-		addIncubator(dimensionId, loc); // cobre blocos colocados antes desta versao
-		openIncubator(player, key);
-	});
+/* ------------------------- relogio: 1x por segundo ------------------------- */
+
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+	if (ev.id !== "sallytek:incubator_tick") return;
+	const core = ev.sourceEntity;
+	if (!core || core.typeId !== ENTITY_ID) return;
+	tickIncubator(core);
 });
 
-/* ----------------------------------- UI ----------------------------------- */
+function tickIncubator(core) {
+	const container = core.getComponent("minecraft:inventory")?.container;
+	if (!container) return;
 
-function fuelPip(state) {
-	return Math.min(FUEL_PIPS, Math.ceil(state.fuelTicks / TICKS_PER_PIP));
+	const block = core.dimension.getBlock(core.location);
+	if (!block || block.typeId !== BLOCK_ID) {
+		// O bloco sumiu sem passar pelo evento de quebrar (explosao, /setblock...).
+		for (let slot = 0; slot < container.size; slot++) {
+			const item = container.getItem(slot);
+			if (item && !isGaugeItem(item.typeId)) {
+				core.dimension.spawnItem(item, core.location);
+			}
+		}
+		core.remove();
+		return;
+	}
+
+	let fuel = core.getDynamicProperty(PROP_FUEL) ?? 0;
+	let progress = core.getDynamicProperty(PROP_PROGRESS) ?? 0;
+
+	const input = container.getItem(SLOT_INPUT);
+	const output = container.getItem(SLOT_OUTPUT);
+	const result = input ? HATCH_RECIPES[input.typeId] : undefined;
+
+	// Da pra trabalhar? Precisa de receita valida e espaco na saida.
+	const outputHasRoom = result !== undefined &&
+		(!output || (output.typeId === result && output.amount < output.maxAmount));
+
+	// Acende a lava so quando ha o que chocar, igual a fornalha.
+	if (fuel <= 0 && outputHasRoom) {
+		fuel = consumeBucket(container, core, fuel);
+	}
+
+	if (fuel > 0) {
+		fuel = Math.max(0, fuel - TICKS_PER_STEP);
+		if (outputHasRoom) {
+			progress += TICKS_PER_STEP;
+			if (progress >= TOTAL_HATCH_TICKS) {
+				progress = 0;
+				produce(container, input, result, output);
+			}
+		} else {
+			progress = 0;
+		}
+	} else {
+		// Sem lava o progresso volta, como a fornalha apagando.
+		progress = Math.max(0, progress - TICKS_PER_STEP);
+	}
+
+	core.setDynamicProperty(PROP_FUEL, fuel);
+	core.setDynamicProperty(PROP_PROGRESS, progress);
+
+	updateGauges(core, container, fuel, progress);
+
+	const isLit = fuel > 0;
+	if (block.permutation.getState("sallytek:lit") !== isLit) {
+		block.setPermutation(block.permutation.withState("sallytek:lit", isLit));
+	}
 }
-function arrowStage(state) {
-	return Math.min(
+
+function consumeBucket(container, core, fuel) {
+	const bucket = container.getItem(SLOT_FUEL);
+	if (!bucket || bucket.typeId !== FUEL_ITEM) return fuel;
+
+	if (bucket.amount > 1) {
+		bucket.amount -= 1;
+		container.setItem(SLOT_FUEL, bucket);
+		// O slot ainda esta cheio de baldes de lava, entao o vazio cai no chao.
+		core.dimension.spawnItem(new ItemStack(EMPTY_BUCKET, 1), core.location);
+	} else {
+		container.setItem(SLOT_FUEL, new ItemStack(EMPTY_BUCKET, 1));
+	}
+	return Math.min(MAX_FUEL_TICKS, fuel + TICKS_PER_PIP);
+}
+
+function produce(container, input, result, output) {
+	if (output) {
+		output.amount += 1;
+		container.setItem(SLOT_OUTPUT, output);
+	} else {
+		container.setItem(SLOT_OUTPUT, new ItemStack(result, 1));
+	}
+
+	if (input.amount > 1) {
+		input.amount -= 1;
+		container.setItem(SLOT_INPUT, input);
+	} else {
+		container.setItem(SLOT_INPUT, undefined);
+	}
+}
+
+// As barras sao itens: o script troca o item-display de cada slot e o JSON UI
+// so desenha o icone dele. E assim que a barra "anima" dentro do container.
+function updateGauges(core, container, fuel, progress) {
+	const pip = Math.min(FUEL_PIPS, Math.ceil(fuel / TICKS_PER_PIP));
+	const stage = Math.min(
 		ARROW_STAGES - 1,
-		Math.floor((state.progressTicks / TOTAL_HATCH_TICKS) * (ARROW_STAGES - 1))
+		Math.floor((progress / TOTAL_HATCH_TICKS) * (ARROW_STAGES - 1))
 	);
+	setGauge(core, container, SLOT_FUEL_GAUGE, `${GAUGE_PREFIX}fuel_${pip}`);
+	setGauge(core, container, SLOT_PROGRESS, `${GAUGE_PREFIX}arrow_${stage}`);
 }
 
-function openIncubator(player, key) {
-	const state = readState(key);
-	const container = player.getComponent("minecraft:inventory")?.container;
-	const pct = Math.floor((state.progressTicks / TOTAL_HATCH_TICKS) * 100);
-
-	const form = new ActionFormData()
-		.title(UI_MARKER)
-		// O texto abaixo so aparece se o resource pack estiver desligado
-		// (ai o formulario cai no visual padrao do Bedrock).
-		.body(
-			`§6Combustivel: ${fuelPip(state)}/${FUEL_PIPS}\n` +
-			`§eProgresso: ${pct}%\n` +
-			`§aChocando: ${state.queuedItem ?? "nada"}`
-		);
-
-	form.button(`§6Lava ${fuelPip(state)}/${FUEL_PIPS}`, `textures/items/incubator_fuel_${fuelPip(state)}`);
-	form.button(`§eProgresso ${pct}%`, `textures/items/incubator_arrow_${arrowStage(state)}`);
-	form.button(`§aEntrada: ${state.queuedItem ?? "vazio"}`, textureFor(state.queuedItem));
-	form.button(`§bSaida: ${state.outputItem ?? "vazio"}`, textureFor(state.outputItem));
-	form.button("§7Fechar");
-
-	// Os 36 slots do inventario. Itens que a Incubadora nao aceita ficam sem
-	// icone, entao a grade mostra so o que da pra usar.
-	for (let slot = 0; slot < INVENTORY_SLOTS; slot++) {
-		const item = container?.getItem(slot);
-		const usable = item && isUsable(item.typeId);
-		form.button(usable ? `${item.typeId} x${item.amount}` : " ", usable ? textureFor(item.typeId) : undefined);
+function setGauge(core, container, slot, itemId) {
+	const current = container.getItem(slot);
+	if (current?.typeId === itemId) return;
+	// Se o jogador largou outra coisa no slot da barra, o item cai no chao em
+	// vez de ser apagado pela troca do item-display.
+	if (current && !isGaugeItem(current.typeId)) {
+		core.dimension.spawnItem(current, core.location);
 	}
-
-	form.show(player).then((res) => {
-		if (res.canceled || res.selection === undefined || res.selection === BTN_CLOSE) return;
-		system.run(() => handleClick(player, key, res.selection));
-		// espera a tela anterior fechar de verdade antes de reabrir atualizada
-		system.runTimeout(() => openIncubator(player, key), 2);
-	}).catch(() => { /* jogador saiu ou ja tinha outra tela aberta */ });
+	container.setItem(slot, new ItemStack(itemId, 1));
 }
-
-function handleClick(player, key, selection) {
-	const state = readState(key);
-	const container = player.getComponent("minecraft:inventory")?.container;
-
-	if (selection === BTN_FUEL) {
-		refuelFrom(player, container, state, findSlotWith(container, FUEL_ITEM));
-	} else if (selection === BTN_ARROW) {
-		// so atualiza a tela
-	} else if (selection === BTN_INPUT) {
-		if (state.queuedItem) {
-			giveItem(player, container, state.queuedItem);
-			state.queuedItem = null;
-			state.progressTicks = 0;
-			player.onScreenDisplay.setActionBar("§eItem retirado da incubadora.");
-		} else {
-			player.onScreenDisplay.setActionBar("§7Clique num item da grade pra colocar aqui.");
-		}
-	} else if (selection === BTN_OUTPUT) {
-		if (state.outputItem) {
-			giveItem(player, container, state.outputItem);
-			state.outputItem = null;
-			player.onScreenDisplay.setActionBar("§bVoce coletou o item chocado!");
-		}
-	} else if (selection >= BTN_INVENTORY) {
-		const slot = selection - BTN_INVENTORY;
-		const item = container?.getItem(slot);
-		if (!item) return;
-		if (item.typeId === FUEL_ITEM) {
-			refuelFrom(player, container, state, slot);
-		} else if (HATCH_RECIPES[item.typeId]) {
-			if (state.queuedItem) {
-				player.onScreenDisplay.setActionBar("§cA incubadora ja esta ocupada.");
-			} else {
-				state.queuedItem = item.typeId;
-				state.progressTicks = 0;
-				takeOne(container, slot, item);
-				player.onScreenDisplay.setActionBar("§aItem colocado na incubadora.");
-			}
-		} else {
-			player.onScreenDisplay.setActionBar("§cEsse item nao serve aqui.");
-		}
-	}
-
-	writeState(key, state);
-}
-
-function findSlotWith(container, itemId) {
-	if (!container) return -1;
-	for (let slot = 0; slot < INVENTORY_SLOTS; slot++) {
-		if (container.getItem(slot)?.typeId === itemId) return slot;
-	}
-	return -1;
-}
-
-function refuelFrom(player, container, state, slot) {
-	if (slot < 0 || !container) {
-		player.onScreenDisplay.setActionBar("§cVoce nao tem balde de lava.");
-		return;
-	}
-	if (state.fuelTicks >= MAX_FUEL_TICKS) {
-		player.onScreenDisplay.setActionBar("§cO tanque de lava ja esta cheio.");
-		return;
-	}
-	const item = container.getItem(slot);
-	if (!item || item.typeId !== FUEL_ITEM) return;
-
-	state.fuelTicks = Math.min(MAX_FUEL_TICKS, state.fuelTicks + TICKS_PER_PIP);
-	takeOne(container, slot, item);
-	giveItem(player, container, EMPTY_BUCKET);
-	player.onScreenDisplay.setActionBar(`§6Lava abastecida: ${fuelPip(state)}/${FUEL_PIPS}`);
-}
-
-function takeOne(container, slot, item) {
-	if (item.amount > 1) {
-		const rest = item.clone();
-		rest.amount -= 1;
-		container.setItem(slot, rest);
-	} else {
-		container.setItem(slot, undefined);
-	}
-}
-
-function giveItem(player, container, itemId) {
-	const stack = new ItemStack(itemId, 1);
-	if (container && container.emptySlotsCount > 0) {
-		container.addItem(stack);
-	} else {
-		player.dimension.spawnItem(stack, player.location);
-	}
-}
-
-/* --------------------- loop: progresso e combustivel ---------------------- */
-
-system.runInterval(() => {
-	const list = loadRegistry();
-	if (list.length === 0) return;
-
-	const data = loadData();
-	let registryChanged = false;
-
-	for (const key of [...list]) {
-		const [dimensionId, coords] = key.split(":");
-		const [x, y, z] = coords.split(",").map(Number);
-
-		let dimension;
-		try {
-			dimension = world.getDimension(dimensionId);
-		} catch {
-			continue;
-		}
-
-		let block;
-		try {
-			block = dimension.getBlock({ x, y, z });
-		} catch {
-			continue; // chunk descarregado: tenta de novo depois
-		}
-		if (!block) continue;
-
-		if (block.typeId !== BLOCK_ID) {
-			const idx = list.indexOf(key);
-			if (idx !== -1) list.splice(idx, 1);
-			delete data[key];
-			registryChanged = true;
-			continue;
-		}
-
-		const state = data[key] ?? defaultState();
-
-		if (state.queuedItem && state.fuelTicks > 0 && !state.outputItem) {
-			state.progressTicks += 20;
-			state.fuelTicks = Math.max(0, state.fuelTicks - 20);
-
-			if (state.progressTicks >= TOTAL_HATCH_TICKS) {
-				state.outputItem = HATCH_RECIPES[state.queuedItem];
-				state.queuedItem = null;
-				state.progressTicks = 0;
-			}
-		}
-
-		const isLit = state.fuelTicks > 0;
-		if (block.permutation.getState("sallytek:lit") !== isLit) {
-			block.setPermutation(block.permutation.withState("sallytek:lit", isLit));
-		}
-
-		data[key] = state;
-	}
-
-	saveData(data);
-	if (registryChanged) saveRegistry(list);
-}, 20);

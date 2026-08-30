@@ -1,0 +1,24 @@
+{
+  "namespace": "incubator_common",
+
+  // Slot de container de verdade: arrastar, clicar e shift-clicar funcionam.
+  // O fundo de celula vem desenhado em textures/ui/incubator_gui, entao
+  // $cell_image_size fica zerado pra nao aparecer a celula cinza da vanilla.
+  "slot@common.container_item": {
+    "ignored": false,
+    "$item_collection_name": "container_items",
+    "$cell_image_size": [ 0, 0 ],
+    "size": [ 18, 18 ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left"
+  },
+
+  // Slot usado só pra desenhar as barras (combustivel e progresso). O item
+  // dentro dele e um item-display trocado pelo script a cada segundo.
+  "gauge@incubator_common.slot": {
+    "$cell_image_size": [ 0, 0 ],
+    "$stack_count_required": false,
+    "$durability_bar_required": false,
+    "$storage_bar_required": false
+  }
+}

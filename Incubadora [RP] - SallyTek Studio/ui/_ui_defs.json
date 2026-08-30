@@ -1,5 +1,7 @@
 {
   "ui_defs": [
+    "ui/chest_screen.json",
+    "ui/incubator_common.json",
     "ui/incubator_screen.json"
   ]
 }

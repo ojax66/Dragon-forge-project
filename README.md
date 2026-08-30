@@ -12,63 +12,74 @@ Incubadora [RP] - SallyTek Studio/   resource pack (modelo, texturas e UI)
 ## Como a interface foi feita
 
 Nesta versão do jogo **bloco customizado ainda não tem container próprio** — não
-existe componente `minecraft:inventory` de bloco no schema, então não dá pra abrir
-uma tela de baú/barril ligada ao bloco.
+existe componente `minecraft:inventory` de bloco no schema. A saída é a que
+funciona desde sempre: o inventário mora numa **entidade invisível** colocada
+dentro do bloco, e a tela de contêiner dela é remodelada por JSON UI.
 
-A UI usa então o caminho que funciona desde sempre: **JSON UI por cima do
-formulário de servidor**. O resource pack substitui `server_form.long_form`
-(`ui/server_form.json`) por um seletor:
+1. Ao colocar o bloco, o script invoca `sallytek:incubator` (entidade) no lugar,
+   com o nome `sallytek.incubator.block`. Esse nome vira o **título do
+   contêiner**.
+2. `ui/chest_screen.json` usa `modifications` pra inserir uma variante de
+   `small_chest_screen` que só vale quando
+   `$new_container_title = 'sallytek.incubator.block'`. Aí o `$screen_content`
+   aponta pra tela da Incubadora. Qualquer outro baú do mundo continua igual —
+   nada de vanilla é redefinido.
+3. `ui/incubator_screen.json` desenha a metade de cima (as 5 células da máquina
+   posicionadas sobre `textures/ui/incubator_gui`), e a metade de baixo reusa
+   `common.inventory_panel_bottom_half` + `common.hotbar_grid_template`, que é o
+   inventário real do jogador.
 
-- título do formulário igual a `sallytek:incubator_ui` → desenha
-  `incubator.screen` (`ui/incubator_screen.json`), a tela da Incubadora;
-- qualquer outro título → cai em `server_form.vanilla_long_form`, que é cópia
-  fiel do `long_form` original da Mojang. Outros add-ons e formulários do mundo
-  continuam funcionando normalmente.
+Como são slots de contêiner de verdade, **arrastar, clicar e shift-clicar
+funcionam** e a tela atualiza sozinha.
 
-Cada slot da tela é um botão do `ActionFormData` posicionado por
-`collection_index` sobre a arte. As barras não são imagens fixas: o script manda
-o caminho da textura como ícone do botão (`#form_button_texture`), e o JSON UI só
-desenha o que chegar. Por isso `incubator_fuel_0..10` e `incubator_arrow_0..6`
-funcionam sem nenhuma condição repetida no JSON.
+### As barras são itens
 
-### Ordem dos botões
+Não dá pra mandar um número pro cliente dentro de um contêiner — só itens. Então
+as barras são itens-display (`sallytek:incubator_fuel_0..10` e
+`sallytek:incubator_arrow_0..6`, definidos em `items/display/`) que o script
+troca a cada segundo no slot correspondente. O JSON UI só desenha o ícone do item
+com `$cell_image_size` zerado e um renderizador alto, e o resultado é uma barra
+que anima.
 
-`scripts/main.js` e `ui/incubator_screen.json` compartilham esta ordem — mexeu em
-um, mexa no outro:
+### Ordem dos slots
+
+`scripts/main.js` e a grade de `ui/incubator_screen.json` compartilham esta
+ordem — mexeu em um, mexa no outro:
 
 | índice | slot |
 |---|---|
-| 0 | barra/slot de combustível (balde de lava) |
-| 1 | barra de progresso |
-| 2 | slot de entrada |
-| 3 | slot de saída |
-| 4 | botão de fechar |
-| 5–40 | os 36 slots do inventário do jogador |
+| 0 | barra de lava (item-display) |
+| 1 | balde de lava |
+| 2 | entrada |
+| 3 | barra de progresso (item-display) |
+| 4 | saída |
+
+### Coordenadas
+
+A metade de baixo é posicionada pelo Bedrock, não por nós: numa tela de 176x166,
+a grade do inventário fica em (7, 86) e a hotbar em (7, 143), células de 18px.
+`tools/gen_gui_texture.py` desenha o fundo já com essas células no lugar — se
+mudar a altura da tela, mude lá também.
 
 ## Como usar no jogo
 
-Clique no bloco pra abrir a tela. Na grade de baixo aparecem os itens do seu
-inventário que a Incubadora aceita — clique num deles pra colocar na entrada, ou
-num balde de lava pra abastecer. O slot de saída entrega o resultado.
+Clique no bloco pra abrir. Balde de lava no slot da esquerda, item pra chocar no
+slot de cima, resultado sai no slot da direita. Pra quebrar o bloco, **agache** —
+a entidade encolhe a hitbox quando você agacha, liberando o bloco atrás dela.
 
-Receitas ficam em `HATCH_RECIPES` no `scripts/main.js`. Ao adicionar uma receita,
-registre também o ícone do item em `ITEM_TEXTURES` do mesmo arquivo — item sem
-ícone cadastrado aparece como slot vazio na grade.
+Receitas ficam em `HATCH_RECIPES` no `scripts/main.js`.
 
 ## Limitações conhecidas
 
-- **A tela é um retrato, não atualiza sozinha.** Formulário de servidor não tem
-  binding ao vivo; as barras se atualizam a cada clique (o script reabre a tela).
-- **Não é arrastar-e-soltar.** Item entra e sai por clique, porque os "slots" são
-  botões de formulário, não slots de container de verdade.
-- **Com o resource pack desligado** o jogo cai no formulário padrão do Bedrock —
-  o texto de cada botão foi escrito pra continuar legível nesse caso.
-
-Quando blocos customizados ganharem container próprio, dá pra trocar essa camada
-por um container de verdade sem mexer na lógica de progresso/combustível.
+- **Quebrar exige agachar**, pela hitbox da entidade (mesmo truque do addon de
+  referência).
+- Se o slot de lava estiver com mais de um balde, o **balde vazio cai no chão**
+  em vez de voltar pro slot, que continua ocupado.
+- O bloco quebrado por explosão ou `/setblock` só devolve o conteúdo no próximo
+  tique da entidade.
 
 ## Assets gerados
 
-`textures/ui/incubator_{bg_tile,frame,slot,slot_hover,recess}.png` foram criados
-pra este add-on (o pacote original só tinha as barras e as texturas do bloco).
-O script que gera eles está em `tools/gen_ui_textures.py`.
+`textures/ui/incubator_gui.png` (o fundo 176x166 da tela) foi criado pra este
+add-on — o pacote original só tinha as barras e as texturas do bloco. O script
+que gera ele está em `tools/gen_gui_texture.py`.

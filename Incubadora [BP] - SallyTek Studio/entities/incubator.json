@@ -1,0 +1,121 @@
+{
+	"format_version": "1.20.60",
+	"minecraft:entity": {
+		"description": {
+			"identifier": "sallytek:incubator",
+			"is_summonable": true,
+			"is_spawnable": false,
+			"is_experimental": false
+		},
+		"component_groups": {
+			"sallytek:normal_hitbox": {
+				"minecraft:collision_box": {
+					"width": 1.0,
+					"height": 1.0
+				}
+			},
+			"sallytek:small_hitbox": {
+				"minecraft:collision_box": {
+					"width": 0.1,
+					"height": 0.1
+				}
+			}
+		},
+		"components": {
+			"minecraft:nameable": {
+				"allow_name_tag_renaming": false,
+				"always_show": false
+			},
+			"minecraft:type_family": {
+				"family": ["incubator", "inanimate"]
+			},
+			// O container e daqui: e ele que abre ao clicar no bloco.
+			// 0 barra de lava | 1 balde | 2 entrada | 3 barra de progresso | 4 saida
+			"minecraft:inventory": {
+				"additional_slots_per_strength": 0,
+				"can_be_siphoned_from": false,
+				"container_type": "inventory",
+				"inventory_size": 5,
+				"private": false,
+				"restrict_to_owner": false
+			},
+			"minecraft:fire_immune": true,
+			"minecraft:damage_sensor": {
+				"triggers": [
+					{
+						"cause": "all",
+						"deals_damage": false
+					}
+				]
+			},
+			"minecraft:health": {
+				"value": 1,
+				"max": 1,
+				"min": 1
+			},
+			"minecraft:knockback_resistance": {
+				"value": 1,
+				"max": 1
+			},
+			"minecraft:persistent": {},
+			// Bate o relogio da incubadora uma vez por segundo.
+			"minecraft:timer": {
+				"time": 1.0,
+				"looping": true,
+				"time_down_event": {
+					"event": "sallytek:ticking",
+					"target": "self"
+				}
+			},
+			// Agachar encolhe a hitbox pra dar pra quebrar o bloco atras dela.
+			"minecraft:entity_sensor": {
+				"relative_range": false,
+				"subsensors": [
+					{
+						"range": 5.0,
+						"minimum_count": 1,
+						"event_filters": {
+							"all_of": [
+								{ "test": "is_family", "subject": "other", "value": "player" },
+								{ "test": "is_sneaking", "subject": "other", "operator": "equals", "value": true }
+							]
+						},
+						"event": "sallytek:shrink_hitbox"
+					},
+					{
+						"range": 5.0,
+						"minimum_count": 0,
+						"maximum_count": 0,
+						"event_filters": {
+							"all_of": [
+								{ "test": "is_family", "subject": "other", "value": "player" },
+								{ "test": "is_sneaking", "subject": "other", "operator": "equals", "value": true }
+							]
+						},
+						"event": "sallytek:grow_hitbox"
+					}
+				]
+			}
+		},
+		"events": {
+			"minecraft:entity_spawned": {
+				"add": {
+					"component_groups": ["sallytek:normal_hitbox"]
+				}
+			},
+			"sallytek:shrink_hitbox": {
+				"remove": { "component_groups": ["sallytek:normal_hitbox"] },
+				"add": { "component_groups": ["sallytek:small_hitbox"] }
+			},
+			"sallytek:grow_hitbox": {
+				"remove": { "component_groups": ["sallytek:small_hitbox"] },
+				"add": { "component_groups": ["sallytek:normal_hitbox"] }
+			},
+			"sallytek:ticking": {
+				"queue_command": {
+					"command": "scriptevent sallytek:incubator_tick"
+				}
+			}
+		}
+	}
+}
