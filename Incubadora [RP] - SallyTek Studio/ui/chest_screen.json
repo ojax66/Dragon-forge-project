@@ -18,7 +18,7 @@
       {
         "root_panel@common.root_panel": {
           "layer": 1,
-          "size": [ 176, 166 ],
+          "size": [ 200, 200 ],
           "controls": [
             {
               "bg": {
@@ -28,9 +28,9 @@
             },
             {
               "screen@common.close_button": {
-                "offset": [ 76, 2 ],
-                "anchor_from": "top_middle",
-                "anchor_to": "top_middle"
+                "offset": [ -6, 4 ],
+                "anchor_from": "top_right",
+                "anchor_to": "top_right"
               }
             },
             {
@@ -39,8 +39,12 @@
                 "layer": 5,
                 "controls": [
                   { "panel_top_half@incubator_ui.top_half": {} },
-                  { "inventory_panel_bottom_half@common.inventory_panel_bottom_half": {} },
-                  { "hotbar_grid@common.hotbar_grid_template": {} },
+                  { "inventory_panel_bottom_half@common.inventory_panel_bottom_half": {
+                      "$background_images": "common.empty_panel"
+                  } },
+                  { "hotbar_grid@common.hotbar_grid_template": {
+                      "$background_images": "common.empty_panel"
+                  } },
                   { "inventory_take_progress_icon_button@common.inventory_take_progress_icon_button": {} }
                 ]
               }

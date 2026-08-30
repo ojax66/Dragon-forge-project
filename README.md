@@ -56,10 +56,21 @@ ordem — mexeu em um, mexa no outro:
 
 ### Coordenadas
 
-A metade de baixo é posicionada pelo Bedrock, não por nós: numa tela de 176x166,
-a grade do inventário fica em (7, 86) e a hotbar em (7, 143), células de 18px.
-`tools/gen_gui_texture.py` desenha o fundo já com essas células no lugar — se
-mudar a altura da tela, mude lá também.
+A tela tem 200x200. A metade de baixo é posicionada pelo Bedrock, não por nós:
+a grade do inventário fica em (19, 120) e a hotbar em (19, 177), células de 18px
+— `(200-162)/2` na horizontal, `200-26-54` e `200-5-18` na vertical.
+`tools/gen_gui_texture.py` desenha o fundo já com essas células no lugar; se
+mudar o tamanho da tela, mude lá também.
+
+As células cinza da vanilla são escondidas com
+`"$background_images": "common.empty_panel"` (na metade de baixo e nos slots
+próprios), então o que aparece é a arte vermelha do fundo. **Não** zere
+`$cell_image_size` pra isso: o `item_cell` usa esse valor como tamanho, e zerá-lo
+desalinha o item dentro do slot.
+
+Os dois slots de barra levam `"$button_ref": "common.empty_panel"`. Sem botão,
+o jogador não consegue tirar o item-display do lugar — as barras não são itens
+que dá pra pegar.
 
 ## Como usar no jogo
 
@@ -109,6 +120,19 @@ Ao entrar no mundo o script escreve `[Incubadora] script carregado` no Content
 Log. Se essa linha não aparecer, o módulo de script não carregou e o problema
 está no manifest, não no resto do add-on.
 
+### O modelo do bloco
+
+O modelo veio autorado como modelo de **entidade**: 24 cubos com rotação livre
+nos três eixos. Geometria de **bloco** no Bedrock só aceita rotação em um eixo,
+em passos de 22,5° — modelo recusado é bloco invisível, que era o sintoma.
+`tools/fix_block_geo.py` reduz cada rotação ao eixo dominante, arredonda pro
+passo válido e confere os limites documentados (±30px do centro da base, e pelo
+menos 1px dentro do bloco base). O original está em
+`tools/incubator_original.geo.json`.
+
+Se for reexportar o modelo, rode o script de novo — ou modele já dentro das
+regras de bloco no Blockbench.
+
 ## Limitações conhecidas
 
 - **Quebrar exige agachar**, pela hitbox da entidade (mesmo truque do addon de
@@ -117,6 +141,8 @@ está no manifest, não no resto do add-on.
   em vez de voltar pro slot, que continua ocupado.
 - O bloco quebrado por explosão ou `/setblock` só devolve o conteúdo no próximo
   tique da entidade.
+- Os 24 cubos rotacionados do modelo ficaram com a rotação arredondada, então o
+  bloco não é pixel a pixel igual ao arquivo original do Blockbench.
 
 ## Assets gerados
 

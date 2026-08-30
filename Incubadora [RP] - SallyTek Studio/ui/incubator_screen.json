@@ -3,7 +3,7 @@
 
   "title_label": {
     "type": "label",
-    "offset": [ 8, 5 ],
+    "offset": [ 10, 7 ],
     "anchor_from": "top_left",
     "anchor_to": "top_left",
     "text": "$container_title",
@@ -13,7 +13,7 @@
 
   "inventory_label": {
     "type": "label",
-    "offset": [ 8, 73 ],
+    "offset": [ 10, 104 ],
     "anchor_from": "top_left",
     "anchor_to": "top_left",
     "text": "container.inventory",
@@ -41,15 +41,7 @@
           "type": "panel",
           "grid_position": [ 0, 0 ],
           "controls": [
-            {
-              "slot@incubator_common.gauge": {
-                "offset": [ 11, 17 ],
-                "size": [ 14, 52 ],
-                "$item_renderer_panel_size": [ 14, 52 ],
-                "$item_renderer_size": [ 14, 52 ],
-                "layer": 0
-              }
-            }
+            { "slot@incubator_common.gauge": { "offset": [ 14, 28 ], "layer": 0 } }
           ]
         }
       },
@@ -58,12 +50,7 @@
           "type": "panel",
           "grid_position": [ 1, 0 ],
           "controls": [
-            {
-              "slot@incubator_common.slot": {
-                "offset": [ 19, 34 ],
-                "layer": 0
-              }
-            }
+            { "slot@incubator_common.slot": { "offset": [ 28, 50 ], "layer": 0 } }
           ]
         }
       },
@@ -72,12 +59,7 @@
           "type": "panel",
           "grid_position": [ 2, 0 ],
           "controls": [
-            {
-              "slot@incubator_common.slot": {
-                "offset": [ 31, 17 ],
-                "layer": 0
-              }
-            }
+            { "slot@incubator_common.slot": { "offset": [ 46, 28 ], "layer": 0 } }
           ]
         }
       },
@@ -86,15 +68,7 @@
           "type": "panel",
           "grid_position": [ 3, 0 ],
           "controls": [
-            {
-              "slot@incubator_common.gauge": {
-                "offset": [ 43, 17 ],
-                "size": [ 14, 52 ],
-                "$item_renderer_panel_size": [ 14, 52 ],
-                "$item_renderer_size": [ 14, 52 ],
-                "layer": 0
-              }
-            }
+            { "slot@incubator_common.gauge": { "offset": [ 64, 28 ], "layer": 0 } }
           ]
         }
       },
@@ -103,12 +77,7 @@
           "type": "panel",
           "grid_position": [ 4, 0 ],
           "controls": [
-            {
-              "slot@incubator_common.slot": {
-                "offset": [ 61, 32 ],
-                "layer": 0
-              }
-            }
+            { "slot@incubator_common.slot": { "offset": [ 84, 48 ], "layer": 0 } }
           ]
         }
       }
@@ -117,7 +86,7 @@
 
   "top_half": {
     "type": "panel",
-    "size": [ 176, 166 ],
+    "size": [ 200, 200 ],
     "offset": [ 0, 0 ],
     "anchor_from": "center",
     "anchor_to": "center",

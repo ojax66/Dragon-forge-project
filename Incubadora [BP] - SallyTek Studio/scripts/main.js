@@ -111,6 +111,23 @@ world.afterEvents.playerInteractWithBlock.subscribe((ev) => {
 	}
 });
 
+/* --------------------- faxina: item-display nunca e do jogador ------------- */
+
+// As barras sao itens de verdade dentro do container. Se algum escapar pro
+// inventario de alguem (versao antiga, /give, criativo), some com ele: esse
+// item nao serve pra nada na mao e so polui o inventario.
+system.runInterval(() => {
+	for (const player of world.getAllPlayers()) {
+		const container = player.getComponent("minecraft:inventory")?.container;
+		if (!container) continue;
+		for (let slot = 0; slot < container.size; slot++) {
+			if (isGaugeItem(container.getItem(slot)?.typeId)) {
+				container.setItem(slot, undefined);
+			}
+		}
+	}
+}, 20);
+
 /* ------------------------- relogio: 1x por segundo ------------------------- */
 
 system.afterEvents.scriptEventReceive.subscribe((ev) => {

@@ -2,8 +2,8 @@
 
 As coordenadas aqui PRECISAM bater com ui/incubator/screen.json (slots da
 maquina) e com o layout fixo do Bedrock para a metade de baixo:
-  - grade do inventario: 9x3 celulas de 18px em (7, 86)
-  - hotbar:              9x1 celulas de 18px em (7, 143)
+  - grade do inventario: 9x3 celulas de 18px em (19, 120)
+  - hotbar:              9x1 celulas de 18px em (19, 177)
 """
 import zlib, struct, random, os
 
@@ -12,16 +12,19 @@ OUT = os.path.join(
     "Incubadora [RP] - SallyTek Studio", "textures", "ui", "incubator_gui.png",
 )
 
-W, H = 176, 166
+W, H = 200, 200
 
 # Slots da maquina (canto superior esquerdo, largura, altura)
-FUEL_BAR   = (11, 17, 14, 52)
-FUEL_SLOT  = (37, 34, 18, 18)
-INPUT_SLOT = (67, 17, 18, 18)
-ARROW_BAR  = (97, 17, 14, 52)
-OUTPUT_SLOT = (133, 32, 18, 18)
+FUEL_BAR    = (14, 28, 16, 60)
+FUEL_SLOT   = (46, 50, 18, 18)
+INPUT_SLOT  = (82, 28, 18, 18)
+ARROW_BAR   = (118, 28, 16, 60)
+OUTPUT_SLOT = (156, 48, 18, 18)
 
-INV_ORIGIN, HOTBAR_ORIGIN, CELL = (7, 86), (7, 143), 18
+# Posicoes fixadas pelo Bedrock numa tela de 200x200:
+#   grade  = centro horizontal (200-162)/2 = 19 ; y = 200-26-54 = 120
+#   hotbar = mesmo x ; y = 200-5-18 = 177
+INV_ORIGIN, HOTBAR_ORIGIN, CELL = (19, 120), (19, 177), 18
 
 # Paleta do mock-up
 BASE      = (74, 31, 26)

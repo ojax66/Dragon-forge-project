@@ -2,23 +2,31 @@
   "namespace": "incubator_common",
 
   // Slot de container de verdade: arrastar, clicar e shift-clicar funcionam.
-  // O fundo de celula vem desenhado em textures/ui/incubator_gui, entao
-  // $cell_image_size fica zerado pra nao aparecer a celula cinza da vanilla.
+  // As celulas ja vem desenhadas em textures/ui/incubator_gui, entao
+  // $background_images e trocado por um painel vazio pra nao aparecer a
+  // celula cinza da vanilla por cima da arte. O tamanho da celula continua
+  // 18x18 - zerar $cell_image_size desalinharia o item dentro do slot.
   "slot@common.container_item": {
     "ignored": false,
     "$item_collection_name": "container_items",
-    "$cell_image_size": [ 0, 0 ],
+    "$background_images": "common.empty_panel",
     "size": [ 18, 18 ],
     "anchor_from": "top_left",
     "anchor_to": "top_left"
   },
 
-  // Slot usado só pra desenhar as barras (combustivel e progresso). O item
-  // dentro dele e um item-display trocado pelo script a cada segundo.
+  // Slot que so desenha uma barra (combustivel e progresso). O item dentro
+  // dele e um item-display trocado pelo script a cada segundo.
+  // $button_ref vira painel vazio: sem botao, o jogador nao consegue tirar a
+  // barra do lugar nem levar o item-display pro inventario.
   "gauge@incubator_common.slot": {
-    "$cell_image_size": [ 0, 0 ],
+    "$button_ref": "common.empty_panel",
     "$stack_count_required": false,
     "$durability_bar_required": false,
-    "$storage_bar_required": false
+    "$storage_bar_required": false,
+    "size": [ 16, 60 ],
+    "$cell_image_size": [ 16, 60 ],
+    "$item_renderer_panel_size": [ 16, 60 ],
+    "$item_renderer_size": [ 16, 60 ]
   }
 }
