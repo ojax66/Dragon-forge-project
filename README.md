@@ -69,6 +69,18 @@ a entidade encolhe a hitbox quando você agacha, liberando o bloco atrás dela.
 
 Receitas ficam em `HATCH_RECIPES` no `scripts/main.js`.
 
+## Compatibilidade
+
+Os dois packs declaram `min_engine_version` **1.21.50** (o `format_version` mais
+alto usado aqui, no `blocks/incubator.json`) e o script usa a API **estável**
+`@minecraft/server 2.4.0` — sem `-beta`, então o mundo **não** precisa do
+experimento "Beta APIs" ligado. Um `min_engine_version` acima da versão do jogo,
+ou uma API beta sem o experimento ligado, faz o pack ser recusado no
+carregamento: o bloco vira desconhecido e aparece invisível e sem função.
+
+O resource pack declara dependência do behavior pack (e vice-versa), então ativar
+um puxa o outro e os dois nunca ficam separados no mundo.
+
 ## Limitações conhecidas
 
 - **Quebrar exige agachar**, pela hitbox da entidade (mesmo truque do addon de
