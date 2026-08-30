@@ -1,5 +1,9 @@
 import { world, system, ItemStack } from "@minecraft/server";
 
+// Aparece no Content Log ao entrar no mundo. Se esta linha nao aparecer, o
+// modulo de script nao carregou e o problema e o manifest, nao o addon.
+console.warn("[Incubadora] script carregado - @minecraft/server 2.9.0");
+
 /* =========================================================
    INCUBADORA - SallyTek Studio
 

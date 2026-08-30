@@ -71,15 +71,43 @@ Receitas ficam em `HATCH_RECIPES` no `scripts/main.js`.
 
 ## Compatibilidade
 
-Os dois packs declaram `min_engine_version` **1.21.50** (o `format_version` mais
-alto usado aqui, no `blocks/incubator.json`) e o script usa a API **estável**
-`@minecraft/server 2.4.0` — sem `-beta`, então o mundo **não** precisa do
-experimento "Beta APIs" ligado. Um `min_engine_version` acima da versão do jogo,
-ou uma API beta sem o experimento ligado, faz o pack ser recusado no
-carregamento: o bloco vira desconhecido e aparece invisível e sem função.
+Alvo: **Minecraft Bedrock 1.26.40+** (testado como alvo do 1.26.45).
+
+O ponto que mais quebra este add-on é a versão do módulo de script no
+`manifest.json`. O registro npm de `@minecraft/server` publica cada beta com a
+versão do jogo no nome (`2.10.0-beta.1.26.44-stable`), o que dá o mapeamento:
+
+| Jogo | módulo beta | módulo **estável** |
+|---|---|---|
+| 1.26.20–21 | 2.8.0-beta | 2.7.0 |
+| 1.26.30–36 | 2.9.0-beta | 2.8.0 |
+| 1.26.40–45 | 2.10.0-beta | **2.9.0** |
+
+O pacote original pedia `"2.8.0-beta"` — a linha beta do 1.26.20, que não existe
+mais no 1.26.45. Módulo que não resolve = pack recusado no carregamento, e um
+bloco de pack recusado aparece invisível e sem função. Agora o manifest pede
+`"2.9.0"`, estável, então o mundo **não** precisa do experimento "Beta APIs".
+
+Todas as APIs usadas em `scripts/main.js` foram conferidas contra o `index.d.ts`
+do `@minecraft/server@2.9.0` — nenhuma é beta (o d.ts estável não tem uma única
+anotação `@beta`).
+
+Ao mudar de versão do jogo, refaça a conferência assim:
+
+```sh
+curl -s https://registry.npmjs.org/@minecraft/server \
+  | python3 -c "import json,sys,re; d=json.load(sys.stdin); \
+      print([v for v in d['versions'] if re.match(r'.*-beta\\.1\\.26\\..*-stable$', v)][-5:])"
+```
+
+O beta que cita a sua versão do jogo indica a linha; a estável é a anterior.
 
 O resource pack declara dependência do behavior pack (e vice-versa), então ativar
 um puxa o outro e os dois nunca ficam separados no mundo.
+
+Ao entrar no mundo o script escreve `[Incubadora] script carregado` no Content
+Log. Se essa linha não aparecer, o módulo de script não carregou e o problema
+está no manifest, não no resto do add-on.
 
 ## Limitações conhecidas
 
