@@ -1,0 +1,14 @@
+{
+	"resource_pack_name": "sallytek_incubator",
+	"texture_name": "atlas.terrain",
+	"padding": 8,
+	"num_mip_levels": 4,
+	"texture_data": {
+		"incubator_lit": {
+			"textures": "textures/blocks/incubator_lit"
+		},
+		"incubator_unlit": {
+			"textures": "textures/blocks/incubator_unlit"
+		}
+	}
+}

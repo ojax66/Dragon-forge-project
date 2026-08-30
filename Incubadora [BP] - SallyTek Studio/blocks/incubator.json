@@ -1,0 +1,57 @@
+{
+	"format_version": "1.21.50",
+	"minecraft:block": {
+		"description": {
+			"identifier": "sallytek:incubator",
+			"menu_category": {
+				"category": "construction"
+			},
+			"states": {
+				"sallytek:lit": [false, true]
+			}
+		},
+		"components": {
+			"minecraft:geometry": "geometry.Incubator_fire",
+			"minecraft:material_instances": {
+				"*": {
+					"texture": "incubator_unlit",
+					"render_method": "opaque",
+					"ambient_occlusion": true,
+					"face_dimming": true
+				}
+			},
+			"minecraft:collision_box": {
+				"origin": [-8, 0, -8],
+				"size": [16, 16, 16]
+			},
+			"minecraft:selection_box": {
+				"origin": [-8, 0, -8],
+				"size": [16, 16, 16]
+			},
+			"minecraft:destructible_by_mining": {
+				"seconds_to_destroy": 3.5
+			},
+			"minecraft:destructible_by_explosion": {
+				"explosion_resistance": 6
+			},
+			"minecraft:light_emission": 0,
+			"minecraft:map_color": "#7a2c10"
+		},
+		"permutations": [
+			{
+				"condition": "query.block_state('sallytek:lit') == true",
+				"components": {
+					"minecraft:material_instances": {
+						"*": {
+							"texture": "incubator_lit",
+							"render_method": "opaque",
+							"ambient_occlusion": true,
+							"face_dimming": true
+						}
+					},
+					"minecraft:light_emission": 8
+				}
+			}
+		]
+	}
+}
