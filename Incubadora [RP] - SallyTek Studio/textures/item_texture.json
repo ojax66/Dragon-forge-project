@@ -17,24 +17,6 @@
 		"sallytek:incubator_fuel_4": {
 			"textures": "textures/items/incubator_fuel_4"
 		},
-		"sallytek:incubator_fuel_5": {
-			"textures": "textures/items/incubator_fuel_5"
-		},
-		"sallytek:incubator_fuel_6": {
-			"textures": "textures/items/incubator_fuel_6"
-		},
-		"sallytek:incubator_fuel_7": {
-			"textures": "textures/items/incubator_fuel_7"
-		},
-		"sallytek:incubator_fuel_8": {
-			"textures": "textures/items/incubator_fuel_8"
-		},
-		"sallytek:incubator_fuel_9": {
-			"textures": "textures/items/incubator_fuel_9"
-		},
-		"sallytek:incubator_fuel_10": {
-			"textures": "textures/items/incubator_fuel_10"
-		},
 		"sallytek:incubator_arrow_0": {
 			"textures": "textures/items/incubator_arrow_0"
 		},
@@ -55,6 +37,15 @@
 		},
 		"sallytek:incubator_arrow_6": {
 			"textures": "textures/items/incubator_arrow_6"
+		},
+		"sallytek:incubator_arrow_7": {
+			"textures": "textures/items/incubator_arrow_7"
+		},
+		"sallytek:incubator_arrow_8": {
+			"textures": "textures/items/incubator_arrow_8"
+		},
+		"sallytek:incubator_arrow_9": {
+			"textures": "textures/items/incubator_arrow_9"
 		}
 	}
 }

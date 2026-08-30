@@ -15,18 +15,29 @@
     "anchor_to": "top_left"
   },
 
-  // Slot que so desenha uma barra (combustivel e progresso). O item dentro
-  // dele e um item-display trocado pelo script a cada segundo.
-  // $button_ref vira painel vazio: sem botao, o jogador nao consegue tirar a
-  // barra do lugar nem levar o item-display pro inventario.
+  // Base dos dois medidores. O item dentro deles e um item-display trocado
+  // pelo script; $button_ref vira painel vazio pra nao existir botao, e sem
+  // botao o jogador nao consegue tirar a barra do lugar.
   "gauge@incubator_common.slot": {
     "$button_ref": "common.empty_panel",
     "$stack_count_required": false,
     "$durability_bar_required": false,
-    "$storage_bar_required": false,
+    "$storage_bar_required": false
+  },
+
+  // Abastecimento: barra vertical, textura de 72x266.
+  "gauge_fuel@incubator_common.gauge": {
     "size": [ 16, 60 ],
     "$cell_image_size": [ 16, 60 ],
     "$item_renderer_panel_size": [ 16, 60 ],
     "$item_renderer_size": [ 16, 60 ]
+  },
+
+  // Setinha de progresso: quadrada, textura de 32x32.
+  "gauge_arrow@incubator_common.gauge": {
+    "size": [ 26, 26 ],
+    "$cell_image_size": [ 26, 26 ],
+    "$item_renderer_panel_size": [ 26, 26 ],
+    "$item_renderer_size": [ 26, 26 ]
   }
 }

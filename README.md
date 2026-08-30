@@ -35,24 +35,38 @@ funcionam** e a tela atualiza sozinha.
 ### As barras são itens
 
 Não dá pra mandar um número pro cliente dentro de um contêiner — só itens. Então
-as barras são itens-display (`sallytek:incubator_fuel_0..10` e
-`sallytek:incubator_arrow_0..6`, definidos em `items/display/`) que o script
-troca a cada segundo no slot correspondente. O JSON UI só desenha o ícone do item
-com `$cell_image_size` zerado e um renderizador alto, e o resultado é uma barra
-que anima.
+as barras são itens-display (`sallytek:incubator_fuel_*` e
+`sallytek:incubator_arrow_*`, em `items/display/`) que o script troca a cada
+segundo no slot correspondente. O JSON UI só desenha o ícone do item, e o
+resultado é uma barra que anima.
+
+**Trocar ou acrescentar quadros:** jogue todos os PNGs numa pasta e rode
+
+```sh
+python3 tools/install_gauge_textures.py <pasta>
+```
+
+Ele separa as séries pelo tamanho (32x32 = setinha, 72x266 = abastecimento),
+ordena cada uma pela quantidade de pixel laranja — do vazio pro cheio —, grava
+numerado, e regenera o que depende da contagem: os itens-display, o
+`item_texture.json`, os `.lang` e as constantes `ARROW_STAGES` e `FUEL_POINTS`
+do `scripts/main.js`. Se a série não tiver um quadro vazio, ele gera um tirando
+o preenchimento do menor quadro.
+
+Hoje: **10 quadros de setinha** e **5 de abastecimento**.
 
 ### Ordem dos slots
 
 `scripts/main.js` e a grade de `ui/incubator_screen.json` compartilham esta
 ordem — mexeu em um, mexa no outro:
 
-| índice | slot |
-|---|---|
-| 0 | barra de lava (item-display) |
-| 1 | balde de lava |
-| 2 | entrada |
-| 3 | barra de progresso (item-display) |
-| 4 | saída |
+| índice | slot | posição na tela |
+|---|---|---|
+| 0 | barra de lava (item-display) | 14, 26 |
+| 1 | balde de lava | 42, 48 |
+| 2 | entrada | 78, 28 |
+| 3 | setinha de progresso (item-display) | 104, 30 |
+| 4 | saída | 150, 30 |
 
 ### Coordenadas
 
@@ -74,9 +88,31 @@ que dá pra pegar.
 
 ## Como usar no jogo
 
-Clique no bloco pra abrir. Balde de lava no slot da esquerda, item pra chocar no
-slot de cima, resultado sai no slot da direita. Pra quebrar o bloco, **agache** —
-a entidade encolhe a hitbox quando você agacha, liberando o bloco atrás dela.
+Clique no bloco pra abrir. Balde de lava no slot ao lado da barra, item pra
+chocar no slot de entrada, resultado sai no slot da direita. Pra quebrar o
+bloco, **agache** — a entidade encolhe a hitbox quando você agacha, liberando o
+bloco atrás dela.
+
+### Abastecimento
+
+**Cada balde de lava vale 1 ponto** no armazenamento. O balde é consumido assim
+que entra no slot e o vazio volta na hora — o tanque guarda a lava, não o balde.
+Balde só entra se couber um ponto inteiro, então nunca se perde um balde pela
+metade.
+
+Balanceamento, tudo em `scripts/main.js`:
+
+| constante | valor | o que é |
+|---|---|---|
+| `FUEL_POINTS` | 4 | capacidade do tanque, em baldes |
+| `TICKS_PER_POINT` | 400 | 20s de forno que cada balde rende |
+| `TOTAL_HATCH_TICKS` | 1200 | 60s de forno pra chocar um item |
+
+Ou seja: 3 baldes por item, e o tanque cheio dá pra um item com troco. O bloco
+acende só enquanto está de fato trabalhando. Sem lava, a setinha volta pra trás.
+
+`FUEL_POINTS` e `ARROW_STAGES` são escritos por
+`tools/install_gauge_textures.py` — mexa nas texturas, não neles.
 
 Receitas ficam em `HATCH_RECIPES` no `scripts/main.js`.
 

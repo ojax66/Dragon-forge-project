@@ -15,11 +15,11 @@ OUT = os.path.join(
 W, H = 200, 200
 
 # Slots da maquina (canto superior esquerdo, largura, altura)
-FUEL_BAR    = (14, 28, 16, 60)
-FUEL_SLOT   = (46, 50, 18, 18)
-INPUT_SLOT  = (82, 28, 18, 18)
-ARROW_BAR   = (118, 28, 16, 60)
-OUTPUT_SLOT = (156, 48, 18, 18)
+FUEL_BAR    = (14, 26, 16, 60)    # barra vertical de abastecimento
+FUEL_SLOT   = (42, 48, 18, 18)    # onde entra o balde de lava
+INPUT_SLOT  = (78, 28, 18, 18)
+OUTPUT_SLOT = (150, 30, 18, 18)
+# A setinha (104, 30, 26, 26) nao ganha nicho: a arte dela ja tem contorno
 
 # Posicoes fixadas pelo Bedrock numa tela de 200x200:
 #   grade  = centro horizontal (200-162)/2 = 19 ; y = 200-26-54 = 120
@@ -107,7 +107,7 @@ def main():
         put(px, 1, y, EDGE_LITE, 170); put(px, W - 2, y, SLOT_SHAD, 170)
 
     # nichos das barras e celulas da maquina
-    for r in (FUEL_BAR, ARROW_BAR, FUEL_SLOT, INPUT_SLOT, OUTPUT_SLOT):
+    for r in (FUEL_BAR, FUEL_SLOT, INPUT_SLOT, OUTPUT_SLOT):
         recess(px, *r)
 
     # grade do inventario e hotbar

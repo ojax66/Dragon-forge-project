@@ -35,13 +35,17 @@ const SLOT_INPUT = 2;        // item a chocar
 const SLOT_PROGRESS = 3;     // item-display: barra de progresso
 const SLOT_OUTPUT = 4;       // resultado
 
-const ARROW_STAGES = 7;      // sallytek:incubator_arrow_0 .. _6
-const FUEL_PIPS = 10;        // sallytek:incubator_fuel_0 .. _10
+// Contagens de quadros das barras. Quem mexe nelas e
+// tools/install_gauge_textures.py - rode ele depois de trocar as texturas.
+const ARROW_STAGES = 10;      // quadros de sallytek:incubator_arrow_*
+const FUEL_POINTS = 4;      // capacidade do tanque, em baldes
 
-const TOTAL_HATCH_TICKS = 2000;                       // 100s pra chocar
-const TICKS_PER_PIP = TOTAL_HATCH_TICKS / FUEL_PIPS;  // 200 ticks por balde
-const MAX_FUEL_TICKS = FUEL_PIPS * TICKS_PER_PIP;
-const TICKS_PER_STEP = 20;                            // o timer da entidade bate 1x por segundo
+// Balanceamento: cada balde rende 20s de forno e chocar leva 60s, ou seja
+// 3 baldes por item. O tanque cheio (4 baldes) da pra um item e sobra troco.
+const TOTAL_HATCH_TICKS = 1200;   // 60s de forno pra chocar um item
+const TICKS_PER_POINT = 400;      // 20s de forno que cada balde rende
+const MAX_FUEL_TICKS = FUEL_POINTS * TICKS_PER_POINT;
+const TICKS_PER_STEP = 20;        // o timer da entidade bate 1x por segundo
 
 const FUEL_ITEM = "minecraft:lava_bucket";
 const EMPTY_BUCKET = "minecraft:bucket";
@@ -157,32 +161,27 @@ function tickIncubator(core) {
 	let fuel = core.getDynamicProperty(PROP_FUEL) ?? 0;
 	let progress = core.getDynamicProperty(PROP_PROGRESS) ?? 0;
 
+	// 1) Abastecer. Cada balde de lava do slot vira 1 ponto no tanque na hora,
+	//    e o balde vazio volta - o tanque guarda a lava, nao o balde.
+	fuel = refill(container, core, fuel);
+
+	// 2) Trabalhar. Precisa de receita valida, espaco na saida e lava no tanque.
 	const input = container.getItem(SLOT_INPUT);
 	const output = container.getItem(SLOT_OUTPUT);
 	const result = input ? HATCH_RECIPES[input.typeId] : undefined;
-
-	// Da pra trabalhar? Precisa de receita valida e espaco na saida.
 	const outputHasRoom = result !== undefined &&
 		(!output || (output.typeId === result && output.amount < output.maxAmount));
 
-	// Acende a lava so quando ha o que chocar, igual a fornalha.
-	if (fuel <= 0 && outputHasRoom) {
-		fuel = consumeBucket(container, core, fuel);
-	}
-
-	if (fuel > 0) {
+	const working = outputHasRoom && fuel > 0;
+	if (working) {
 		fuel = Math.max(0, fuel - TICKS_PER_STEP);
-		if (outputHasRoom) {
-			progress += TICKS_PER_STEP;
-			if (progress >= TOTAL_HATCH_TICKS) {
-				progress = 0;
-				produce(container, input, result, output);
-			}
-		} else {
+		progress += TICKS_PER_STEP;
+		if (progress >= TOTAL_HATCH_TICKS) {
 			progress = 0;
+			produce(container, input, result, output);
 		}
 	} else {
-		// Sem lava o progresso volta, como a fornalha apagando.
+		// Parou: o progresso volta, como a fornalha esfriando.
 		progress = Math.max(0, progress - TICKS_PER_STEP);
 	}
 
@@ -191,25 +190,28 @@ function tickIncubator(core) {
 
 	updateGauges(core, container, fuel, progress);
 
-	const isLit = fuel > 0;
+	const isLit = working;
 	if (block.permutation.getState("sallytek:lit") !== isLit) {
 		block.setPermutation(block.permutation.withState("sallytek:lit", isLit));
 	}
 }
 
-function consumeBucket(container, core, fuel) {
+// 1 balde de lava = 1 ponto de armazenamento. So aceita se couber inteiro,
+// pra nunca engolir um balde e dar menos de um ponto em troca.
+function refill(container, core, fuel) {
 	const bucket = container.getItem(SLOT_FUEL);
 	if (!bucket || bucket.typeId !== FUEL_ITEM) return fuel;
+	if (fuel + TICKS_PER_POINT > MAX_FUEL_TICKS) return fuel;
 
 	if (bucket.amount > 1) {
 		bucket.amount -= 1;
 		container.setItem(SLOT_FUEL, bucket);
-		// O slot ainda esta cheio de baldes de lava, entao o vazio cai no chao.
+		// O slot ainda tem baldes de lava, entao o vazio cai no chao.
 		core.dimension.spawnItem(new ItemStack(EMPTY_BUCKET, 1), core.location);
 	} else {
 		container.setItem(SLOT_FUEL, new ItemStack(EMPTY_BUCKET, 1));
 	}
-	return Math.min(MAX_FUEL_TICKS, fuel + TICKS_PER_PIP);
+	return fuel + TICKS_PER_POINT;
 }
 
 function produce(container, input, result, output) {
@@ -231,12 +233,12 @@ function produce(container, input, result, output) {
 // As barras sao itens: o script troca o item-display de cada slot e o JSON UI
 // so desenha o icone dele. E assim que a barra "anima" dentro do container.
 function updateGauges(core, container, fuel, progress) {
-	const pip = Math.min(FUEL_PIPS, Math.ceil(fuel / TICKS_PER_PIP));
+	const points = Math.min(FUEL_POINTS, Math.ceil(fuel / TICKS_PER_POINT));
 	const stage = Math.min(
 		ARROW_STAGES - 1,
-		Math.floor((progress / TOTAL_HATCH_TICKS) * (ARROW_STAGES - 1))
+		Math.floor((progress / TOTAL_HATCH_TICKS) * ARROW_STAGES)
 	);
-	setGauge(core, container, SLOT_FUEL_GAUGE, `${GAUGE_PREFIX}fuel_${pip}`);
+	setGauge(core, container, SLOT_FUEL_GAUGE, `${GAUGE_PREFIX}fuel_${points}`);
 	setGauge(core, container, SLOT_PROGRESS, `${GAUGE_PREFIX}arrow_${stage}`);
 }
 
