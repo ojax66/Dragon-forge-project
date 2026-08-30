@@ -70,91 +70,40 @@ ordem — mexeu em um, mexa no outro:
 
 ### Coordenadas
 
-A tela tem 200x200. A metade de baixo é posicionada pelo Bedrock, não por nós:
-a grade do inventário fica em (19, 120) e a hotbar em (19, 177), células de 18px
-— `(200-162)/2` na horizontal, `200-26-54` e `200-5-18` na vertical.
-`tools/gen_gui_texture.py` desenha o fundo já com essas células no lugar; se
-mudar o tamanho da tela, mude lá também.
+A tela tem **176x166**, o mesmo tamanho de baú/fornalha da vanilla. As posições
+saíram do mock-up de referência (284x266, que é essa tela renderizada em
+1,611x — as colunas da grade caem exatas no passo 18 da vanilla):
 
-As células cinza da vanilla são escondidas com
-`"$background_images": "common.empty_panel"` (na metade de baixo e nos slots
-próprios), então o que aparece é a arte vermelha do fundo. **Não** zere
-`$cell_image_size` pra isso: o `item_cell` usa esse valor como tamanho, e zerá-lo
-desalinha o item dentro do slot.
-
-Os dois slots de barra levam `"$button_ref": "common.empty_panel"`. Sem botão,
-o jogador não consegue tirar o item-display do lugar — as barras não são itens
-que dá pra pegar.
-
-## Como usar no jogo
-
-Clique no bloco pra abrir. Balde de lava no slot ao lado da barra, item pra
-chocar no slot de entrada, resultado sai no slot da direita. Pra quebrar o
-bloco, **agache** — a entidade encolhe a hitbox quando você agacha, liberando o
-bloco atrás dela.
-
-### Abastecimento
-
-**Cada balde de lava vale 1 ponto** no armazenamento. O balde é consumido assim
-que entra no slot e o vazio volta na hora — o tanque guarda a lava, não o balde.
-Balde só entra se couber um ponto inteiro, então nunca se perde um balde pela
-metade.
-
-Balanceamento, tudo em `scripts/main.js`:
-
-| constante | valor | o que é |
+| elemento | posição | tamanho |
 |---|---|---|
-| `FUEL_POINTS` | 4 | capacidade do tanque, em baldes |
-| `TICKS_PER_POINT` | 400 | 20s de forno que cada balde rende |
-| `TOTAL_HATCH_TICKS` | 1200 | 60s de forno pra chocar um item |
+| tanque de lava | 7, 16 | 18 × 61 (barra 16 × 59) |
+| slot do balde | 31, 57 | 18 × 18 |
+| entrada | 74, 36 | 18 × 18 |
+| setinha | 95, 33 | 26 × 26 |
+| saída | 124, 33 | 26 × 26 |
+| título | 58, 6 | — |
+| "Inventário" | direita −11, 72 | — |
+| grade 9×3 | 7, 86 | células 18 |
+| hotbar 9×1 | 7, 143 | células 18 |
 
-Ou seja: 3 baldes por item, e o tanque cheio dá pra um item com troco. O bloco
-acende só enquanto está de fato trabalhando. Sem lava, a setinha volta pra trás.
+A grade e a hotbar são posicionadas pelo Bedrock, não por nós — `7, 86` e
+`7, 143` saem de `(176−162)/2`, `166−26−54` e `166−5−18`. No mock-up esse bloco
+está ~3px mais alto; ficou na posição da vanilla porque é onde estão os slots
+clicáveis de verdade.
 
-`FUEL_POINTS` e `ARROW_STAGES` são escritos por
-`tools/install_gauge_textures.py` — mexa nas texturas, não neles.
+### A cor das células
 
-Receitas ficam em `HATCH_RECIPES` no `scripts/main.js`.
+As células vermelhas são uma **textura de slot** (`textures/ui/incubator_cell`,
+18×18 em nine-slice de 1px), passada em `$background_images` no lugar do
+`common.cell_image_panel` da vanilla — nos slots da máquina **e** no inventário
+e na hotbar do jogador. Nada de item colorido fingindo ser célula, e nada de
+célula assada no fundo: quem desenha é o próprio JSON UI, em cima do slot de
+verdade, então nunca sai do lugar. O mesmo arquivo estica pro tanque (18×61) e
+pra saída (26×26).
 
-## Compatibilidade
-
-Alvo: **Minecraft Bedrock 1.26.40+** (testado como alvo do 1.26.45).
-
-O ponto que mais quebra este add-on é a versão do módulo de script no
-`manifest.json`. O registro npm de `@minecraft/server` publica cada beta com a
-versão do jogo no nome (`2.10.0-beta.1.26.44-stable`), o que dá o mapeamento:
-
-| Jogo | módulo beta | módulo **estável** |
-|---|---|---|
-| 1.26.20–21 | 2.8.0-beta | 2.7.0 |
-| 1.26.30–36 | 2.9.0-beta | 2.8.0 |
-| 1.26.40–45 | 2.10.0-beta | **2.9.0** |
-
-O pacote original pedia `"2.8.0-beta"` — a linha beta do 1.26.20, que não existe
-mais no 1.26.45. Módulo que não resolve = pack recusado no carregamento, e um
-bloco de pack recusado aparece invisível e sem função. Agora o manifest pede
-`"2.9.0"`, estável, então o mundo **não** precisa do experimento "Beta APIs".
-
-Todas as APIs usadas em `scripts/main.js` foram conferidas contra o `index.d.ts`
-do `@minecraft/server@2.9.0` — nenhuma é beta (o d.ts estável não tem uma única
-anotação `@beta`).
-
-Ao mudar de versão do jogo, refaça a conferência assim:
-
-```sh
-curl -s https://registry.npmjs.org/@minecraft/server \
-  | python3 -c "import json,sys,re; d=json.load(sys.stdin); \
-      print([v for v in d['versions'] if re.match(r'.*-beta\\.1\\.26\\..*-stable$', v)][-5:])"
-```
-
-O beta que cita a sua versão do jogo indica a linha; a estável é a anterior.
-
-O resource pack declara dependência do behavior pack (e vice-versa), então ativar
-um puxa o outro e os dois nunca ficam separados no mundo.
-
-Ao entrar no mundo o script escreve `[Incubadora] script carregado` no Content
-Log. Se essa linha não aparecer, o módulo de script não carregou e o problema
-está no manifest, não no resto do add-on.
+O fundo (`textures/ui/incubator_gui`) tem só o painel, a moldura e os veios de
+lava. Os dois são gerados por `tools/gen_ui_textures.py`, com a paleta amostrada
+do mock-up: fundo `#652828`, célula `#501B1B`, sombra `#411616`, brilho `#883D3D`.
 
 ### O modelo do bloco
 

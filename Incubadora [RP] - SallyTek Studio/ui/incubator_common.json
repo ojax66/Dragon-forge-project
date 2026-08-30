@@ -1,18 +1,33 @@
 {
   "namespace": "incubator_common",
 
+  // Celula vermelha da Incubadora. Entra no lugar de common.cell_image_panel
+  // via $background_images, entao ela e desenhada pelo proprio JSON UI em cima
+  // de cada slot de verdade - inclusive nos slots do inventario do jogador.
+  // Nine-slice de 1px: a mesma textura serve pro slot de 18x18, pra saida de
+  // 26x26 e pro tanque de 18x61.
+  "cell_image": {
+    "type": "image",
+    "texture": "textures/ui/incubator_cell",
+    "size": "$cell_image_size"
+  },
+
   // Slot de container de verdade: arrastar, clicar e shift-clicar funcionam.
-  // As celulas ja vem desenhadas em textures/ui/incubator_gui, entao
-  // $background_images e trocado por um painel vazio pra nao aparecer a
-  // celula cinza da vanilla por cima da arte. O tamanho da celula continua
-  // 18x18 - zerar $cell_image_size desalinharia o item dentro do slot.
   "slot@common.container_item": {
     "ignored": false,
     "$item_collection_name": "container_items",
-    "$background_images": "common.empty_panel",
+    "$background_images": "incubator_common.cell_image",
     "size": [ 18, 18 ],
     "anchor_from": "top_left",
     "anchor_to": "top_left"
+  },
+
+  // Saida: celula maior, como a da fornalha.
+  "slot_big@incubator_common.slot": {
+    "size": [ 26, 26 ],
+    "$cell_image_size": [ 26, 26 ],
+    "$item_renderer_panel_size": [ 26, 26 ],
+    "$item_renderer_size": [ 16, 16 ]
   },
 
   // Base dos dois medidores. O item dentro deles e um item-display trocado
@@ -25,16 +40,19 @@
     "$storage_bar_required": false
   },
 
-  // Abastecimento: barra vertical, textura de 72x266.
+  // Tanque de lava: barra vertical com a moldura da celula em volta,
+  // do jeito que aparece no mock-up. Textura de origem 72x266.
   "gauge_fuel@incubator_common.gauge": {
-    "size": [ 16, 60 ],
-    "$cell_image_size": [ 16, 60 ],
-    "$item_renderer_panel_size": [ 16, 60 ],
-    "$item_renderer_size": [ 16, 60 ]
+    "size": [ 18, 61 ],
+    "$cell_image_size": [ 18, 61 ],
+    "$item_renderer_panel_size": [ 16, 59 ],
+    "$item_renderer_size": [ 16, 59 ]
   },
 
-  // Setinha de progresso: quadrada, textura de 32x32.
+  // Setinha de progresso: sem celula atras, porque a textura dela ja tem
+  // contorno proprio. Textura de origem 32x32.
   "gauge_arrow@incubator_common.gauge": {
+    "$background_images": "common.empty_panel",
     "size": [ 26, 26 ],
     "$cell_image_size": [ 26, 26 ],
     "$item_renderer_panel_size": [ 26, 26 ],
