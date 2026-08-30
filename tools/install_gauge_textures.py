@@ -141,6 +141,25 @@ def blank_frame(px):
     return out
 
 
+def squarify(px, w, h):
+    """Centraliza o quadro num canvas quadrado, com as sobras transparentes.
+
+    Icone de item no Bedrock e sempre quadrado: o atlas nao aceita 72x266 e
+    acaba cortando/deformando a barra. Com o quadro dentro de um quadrado de
+    266x266, o atlas fica feliz e o JSON UI so precisa desenhar o item grande
+    o suficiente pra barra dentro dele sair no tamanho certo.
+    """
+    side = max(w, h)
+    if w == h:
+        return px, side
+    ox, oy = (side - w) // 2, (side - h) // 2
+    out = [[[0, 0, 0, 0] for _ in range(side)] for _ in range(side)]
+    for y in range(h):
+        for x in range(w):
+            out[oy + y][ox + x] = list(px[y][x])
+    return out, side
+
+
 def install(series, prefix, w, h):
     """Grava os quadros como <prefix>_0..N. Cria o vazio se nao veio nenhum."""
     for old in os.listdir(TEX_DIR):
@@ -154,8 +173,10 @@ def install(series, prefix, w, h):
     else:
         criado = False
 
+    side = None
     for i, px in enumerate(frames):
-        write_png(os.path.join(TEX_DIR, f"{prefix}_{i}.png"), w, h, px)
+        sq, side = squarify(px, w, h)
+        write_png(os.path.join(TEX_DIR, f"{prefix}_{i}.png"), side, side, sq)
     return len(frames), criado
 
 

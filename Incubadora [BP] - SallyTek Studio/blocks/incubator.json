@@ -7,7 +7,10 @@
 				"category": "construction"
 			},
 			"states": {
-				"sallytek:lit": [false, true]
+				"sallytek:lit": [
+					false,
+					true
+				]
 			}
 		},
 		"components": {
@@ -15,18 +18,32 @@
 			"minecraft:material_instances": {
 				"*": {
 					"texture": "incubator_unlit",
-					"render_method": "opaque",
-					"ambient_occlusion": true,
-					"face_dimming": true
+					"render_method": "alpha_test"
 				}
 			},
 			"minecraft:collision_box": {
-				"origin": [-8, 0, -8],
-				"size": [16, 16, 16]
+				"origin": [
+					-8,
+					0,
+					-8
+				],
+				"size": [
+					16,
+					16,
+					16
+				]
 			},
 			"minecraft:selection_box": {
-				"origin": [-8, 0, -8],
-				"size": [16, 16, 16]
+				"origin": [
+					-8,
+					0,
+					-8
+				],
+				"size": [
+					16,
+					16,
+					16
+				]
 			},
 			"minecraft:destructible_by_mining": {
 				"seconds_to_destroy": 3.5
@@ -44,9 +61,7 @@
 					"minecraft:material_instances": {
 						"*": {
 							"texture": "incubator_lit",
-							"render_method": "opaque",
-							"ambient_occlusion": true,
-							"face_dimming": true
+							"render_method": "alpha_test"
 						}
 					},
 					"minecraft:light_emission": 8

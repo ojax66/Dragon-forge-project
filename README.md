@@ -32,6 +32,16 @@ dentro do bloco, e a tela de contêiner dela é remodelada por JSON UI.
 Como são slots de contêiner de verdade, **arrastar, clicar e shift-clicar
 funcionam** e a tela atualiza sozinha.
 
+### Ícone de item é sempre quadrado
+
+O atlas de itens do Bedrock só aceita ícone quadrado. A barra do tanque é
+72×266, e mandada assim ela era cortada pelo atlas — o medidor não mexia ao
+abastecer e só mostrava um pedaço de lava no topo quando cheio.
+`tools/install_gauge_textures.py` grava cada quadro **centralizado num canvas
+quadrado** (266×266, sobras transparentes). Aí é só desenhar o item a 59×59 que
+a barra dentro dele sai com `59 × 72/266 = 16` de largura por 59 de altura, que
+é a medida do mock-up. A setinha já vem 32×32, quadrada, e não precisa disso.
+
 ### As barras são itens
 
 Não dá pra mandar um número pro cliente dentro de um contêiner — só itens. Então
@@ -105,6 +115,19 @@ O fundo (`textures/ui/incubator_gui`) tem só o painel, a moldura e os veios de
 lava. Os dois são gerados por `tools/gen_ui_textures.py`, com a paleta amostrada
 do mock-up: fundo `#652828`, célula `#501B1B`, sombra `#411616`, brilho `#883D3D`.
 
+### Por que o bloco pode sumir
+
+O modelo tem 24×23×24 px, ou seja **passa do cubo do próprio bloco**. Três
+coisas foram acertadas por causa disso:
+
+- `render_method` é **`alpha_test`**, não `opaque`. O render de bloco opaco
+  corta faces pelas bordas do cubo e do chunk — modelo que vaza do bloco some.
+- `visible_bounds_width` era **4** (4 blocos), acima do limite de 1,875 de
+  geometria de bloco. Agora é 2, como no add-on de referência que renderiza.
+- **Não existe `blocks.json`** no resource pack. Bloco customizado que usa
+  `minecraft:material_instances` não precisa dele, e uma entrada ali sem
+  `textures` faz o cliente cair no caminho de bloco vanilla.
+
 ### O modelo do bloco
 
 O modelo veio autorado como modelo de **entidade**: 24 cubos com rotação livre
@@ -122,6 +145,12 @@ regras de bloco no Blockbench.
 
 - **Quebrar exige agachar**, pela hitbox da entidade (mesmo truque do addon de
   referência).
+- **No controle por toque aparece o botão "Abrir"** em vez de abrir no toque.
+  O contêiner mora numa entidade, e o Bedrock sempre pede o botão pra interagir
+  com entidade — bloco abre no toque, entidade não. Não dá pra contornar por
+  script: `@minecraft/server` 2.9.0 não tem nenhuma API que abra um contêiner
+  para o jogador (conferido no `index.d.ts`). Só some quando bloco customizado
+  puder ter contêiner próprio.
 - Se o slot de lava estiver com mais de um balde, o **balde vazio cai no chão**
   em vez de voltar pro slot, que continua ocupado.
 - O bloco quebrado por explosão ou `/setblock` só devolve o conteúdo no próximo

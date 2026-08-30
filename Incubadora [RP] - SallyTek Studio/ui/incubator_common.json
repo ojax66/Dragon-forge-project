@@ -40,13 +40,16 @@
     "$storage_bar_required": false
   },
 
-  // Tanque de lava: barra vertical com a moldura da celula em volta,
-  // do jeito que aparece no mock-up. Textura de origem 72x266.
+  // Tanque de lava. A textura da barra e 72x266, mas icone de item no Bedrock
+  // e sempre quadrado, entao ela e gravada centralizada num canvas de 266x266
+  // (tools/install_gauge_textures.py faz isso). Desenhando o item a 59x59, a
+  // barra dentro dele sai com 59 * 72/266 = 16 de largura por 59 de altura -
+  // exatamente a medida do mock-up. O que sobra do quadrado e transparente.
   "gauge_fuel@incubator_common.gauge": {
     "size": [ 18, 61 ],
     "$cell_image_size": [ 18, 61 ],
-    "$item_renderer_panel_size": [ 16, 59 ],
-    "$item_renderer_size": [ 16, 59 ]
+    "$item_renderer_panel_size": [ 59, 59 ],
+    "$item_renderer_size": [ 59, 59 ]
   },
 
   // Setinha de progresso: sem celula atras, porque a textura dela ja tem
