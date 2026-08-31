@@ -1,5 +1,4 @@
 tile.sallytek:incubator.name=Incubadora
-tile.sallytek:teste_render.name=TESTE - cubo simples
 
 ## titulo do container (nome da entidade invisivel)
 sallytek.incubator.block=Incubadora
