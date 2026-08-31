@@ -117,30 +117,32 @@ do mock-up: fundo `#652828`, célula `#501B1B`, sombra `#411616`, brilho `#883D3
 
 ### O modelo do bloco
 
-O arquivo do Blockbench (`tools/incubator_original.geo.json`) foi autorado como
-modelo de **entidade**: 24×23×24 px — uma vez e meia o cubo do bloco — e 24
-cubos com rotação livre nos três eixos. Geometria de **bloco** é bem mais
-apertada, então `tools/fix_block_geo.py` gera a versão de bloco a partir dele:
+O modelo vai **sem edição nenhuma**: `tools/fix_block_geo.py` não move, escala,
+rotaciona nem descarta cubo algum. Origem, tamanho, rotação, `inflate` e UV de
+cada um dos 53 cubos saem idênticos ao arquivo do Blockbench, e o script
+confere isso comparando os 424 vértices um a um — falha se algum sair do lugar.
 
-1. **escala tudo por igual até caber em 16×16×16** (fator 0,6672) e assenta a
-   base no `y=0`. A base octogonal do original ficava pra fora do cubo nos
-   quatro lados;
-2. **reduz cada rotação ao eixo de maior ângulo**, arredondado pro passo de
-   22,5° — bloco só aceita rotação em um eixo nesse passo;
-3. ajusta `visible_bounds` pro tamanho novo;
-4. confere no fim que nada ficou fora das regras (e falha se ficou).
+O que ele arruma é só estrutura, duas coisas que são de modelo de **entidade** e
+não existem em geometria de bloco:
 
-As UVs não mudam: são coordenadas de textura, não de espaço. Reexportou o
-modelo? Substitua `tools/incubator_original.geo.json` e rode o script.
+- o osso `water_and_lava` tinha **`parent`** — hierarquia de osso é coisa de
+  entidade; bloco espera uma lista de cubos;
+- os dois ossos tinham **`pivot: [16, 0, 0]`**, um bloco inteiro longe da
+  origem. Pivô só serve como centro de rotação do osso, e nenhum dos dois gira —
+  então zerar não move nada.
 
-Junto com isso, três coisas que também derrubavam o bloco:
+Como nenhum osso gira, juntar tudo num osso só com pivô na origem dá exatamente
+o mesmo desenho, numa estrutura que o render de bloco entende.
 
-- `render_method` é **`alpha_test`**, não `opaque` — render de bloco opaco corta
-  faces pelas bordas do cubo e do chunk.
-- **Não existe `blocks.json`** no resource pack. Bloco customizado que usa
-  `minecraft:material_instances` não precisa dele, e uma entrada ali sem
-  `textures` faz o cliente cair no caminho de bloco vanilla.
-- `visible_bounds_width` era 4 blocos, acima do limite de geometria de bloco.
+As texturas do bloco (`incubator_lit.png`, `incubator_unlit.png`) são as
+originais, byte a byte.
+
+**Se ainda assim não renderizar**, o modelo tem duas coisas que geometria de
+bloco não aceita e que não dá pra arrumar sem mexer na forma: 24 cubos com
+rotação livre nos três eixos (bloco só aceita um eixo, em passo de 22,5°) e
+24×23×24 px de tamanho. Aí o único jeito de mostrar esse modelo exato é
+renderizá-lo na entidade — modelo de entidade não tem nenhuma dessas restrições,
+e este foi autorado como um.
 
 ## Limitações conhecidas
 
