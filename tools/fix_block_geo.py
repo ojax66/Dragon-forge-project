@@ -1,108 +1,112 @@
-"""Deixa o modelo do bloco dentro das regras de geometria de bloco do Bedrock.
+#!/usr/bin/env python3
+"""Adapta o modelo da Incubadora as regras de geometria de BLOCO do Bedrock.
 
-O modelo veio autorado como modelo de ENTIDADE: 24 cubos com rotacao livre nos
-tres eixos e UVs passando de 64px. Geometria de BLOCO so aceita rotacao em um
-eixo, em passos de 22.5 graus. Modelo recusado = bloco invisivel.
+O arquivo do Blockbench (tools/incubator_original.geo.json) foi autorado como
+modelo de ENTIDADE: 24x23x24 px, ou seja uma vez e meia o cubo do bloco, e 24
+cubos com rotacao livre nos tres eixos. Geometria de bloco e bem mais apertada:
 
-Este script:
-  - reduz cada rotacao ao eixo dominante e arredonda pro passo de 22.5;
-  - encaixa as UVs por face dentro da textura de 64x64;
-  - confere os limites documentados (+-30px do centro da base, e pelo menos
-    1px dentro do bloco base).
+  - o modelo tem que caber no cubo do bloco pra nunca esbarrar em regra de
+    tamanho, corte de face ou culling de chunk;
+  - rotacao de cubo so vale em UM eixo, em passo de 22.5 graus.
 
-O original fica em tools/incubator_original.geo.json.
+Este script gera a versao de bloco a partir do original:
+
+  1. escala tudo por igual ate caber em 16x16x16 e assenta a base no y=0;
+  2. reduz cada rotacao ao eixo de maior angulo, arredondado pro passo valido;
+  3. ajusta visible_bounds pro tamanho novo;
+  4. confere no fim que nada ficou fora das regras.
+
+As UVs nao mudam: sao coordenadas de textura, nao de espaco.
 """
 import json, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "tools", "incubator_original.geo.json")
 DST = os.path.join(ROOT, "Incubadora [RP] - SallyTek Studio", "models", "blocks", "incubator.geo.json")
-STEP = 22.5
-LIMIT = 30.0
+
+STEP = 22.5          # passo de rotacao aceito em geometria de bloco
+BLOCK = 16.0         # o cubo do bloco
+R = 5                # casas decimais na saida
 
 
-def snap(angle):
-    return round(angle / STEP) * STEP
+def bounds(g):
+    lo, hi = [1e9] * 3, [-1e9] * 3
+    for bone in g["bones"]:
+        for c in bone.get("cubes", []):
+            o, s, inf = c["origin"], c["size"], c.get("inflate", 0)
+            for i in range(3):
+                lo[i] = min(lo[i], o[i] - inf)
+                hi[i] = max(hi[i], o[i] + s[i] + inf)
+    return lo, hi
 
 
-def fix_rotation(rot):
-    """Mantem so o eixo de maior angulo, arredondado pro passo valido."""
+def snap_rotation(rot):
+    """Deixa so o eixo de maior angulo, arredondado pro passo de 22.5."""
     axis = max(range(3), key=lambda i: abs(rot[i]))
     out = [0.0, 0.0, 0.0]
-    out[axis] = snap(rot[axis])
-    return out, axis
+    out[axis] = round(rot[axis] / STEP) * STEP
+    return out
 
 
 def main():
     d = json.load(open(SRC))
     g = d["minecraft:geometry"][0]
-    tw = g["description"].get("texture_width", 64)
-    th = g["description"].get("texture_height", 64)
 
-    rot_fixed = rot_dropped = uv_fixed = 0
+    lo, hi = bounds(g)
+    tamanho = [hi[i] - lo[i] for i in range(3)]
+    escala = min(BLOCK / t for t in tamanho)
+    # depois de escalar, encosta a base no chao do bloco e centra em X/Z
+    desloca = [
+        -((lo[0] + hi[0]) / 2) * escala,
+        -lo[1] * escala,
+        -((lo[2] + hi[2]) / 2) * escala,
+    ]
 
+    girados = 0
     for bone in g["bones"]:
+        if "pivot" in bone:
+            bone["pivot"] = [round(v * escala + desloca[i], R) for i, v in enumerate(bone["pivot"])]
         if bone.get("rotation"):
-            bone["rotation"], _ = fix_rotation(bone["rotation"])
-        for cube in bone.get("cubes", []):
-            rot = cube.get("rotation")
-            if rot:
-                new, _ = fix_rotation(rot)
-                if all(abs(v) < 1e-9 for v in new):
-                    cube.pop("rotation", None)
-                    cube.pop("pivot", None)
-                    rot_dropped += 1
-                else:
-                    cube["rotation"] = new
-                    rot_fixed += 1
+            bone["rotation"] = snap_rotation(bone["rotation"])
+        for c in bone.get("cubes", []):
+            c["origin"] = [round(v * escala + desloca[i], R) for i, v in enumerate(c["origin"])]
+            c["size"] = [round(v * escala, R) for v in c["size"]]
+            if "pivot" in c:
+                c["pivot"] = [round(v * escala + desloca[i], R) for i, v in enumerate(c["pivot"])]
+            if "inflate" in c:
+                c["inflate"] = round(c["inflate"] * escala, R)
+            if c.get("rotation"):
+                c["rotation"] = snap_rotation(c["rotation"])
+                girados += 1
 
-            uv = cube.get("uv")
-            if isinstance(uv, dict):
-                for face in uv.values():
-                    u = face.get("uv")
-                    us = face.get("uv_size")
-                    if not (u and us):
-                        continue
-                    # uv_size negativo espelha a face: preserva o sinal
-                    for i, (size, span) in enumerate(((tw, us[0]), (th, us[1]))):
-                        lo = min(u[i], u[i] + span)
-                        hi = max(u[i], u[i] + span)
-                        if hi > size:
-                            u[i] -= hi - size
-                            uv_fixed += 1
-                        if lo < 0:
-                            u[i] -= lo
-                            uv_fixed += 1
-
-    # confere os limites de geometria de bloco
-    lo = [1e9] * 3
-    hi = [-1e9] * 3
-    for bone in g["bones"]:
-        for cube in bone.get("cubes", []):
-            o, s = cube["origin"], cube["size"]
-            infl = cube.get("inflate", 0)
-            for i in range(3):
-                lo[i] = min(lo[i], o[i] - infl)
-                hi[i] = max(hi[i], o[i] + s[i] + infl)
+    lo2, hi2 = bounds(g)
+    g["description"]["visible_bounds_width"] = 2
+    g["description"]["visible_bounds_height"] = 2
+    g["description"]["visible_bounds_offset"] = [0, 0.5, 0]
 
     problemas = []
+    limites = ((-8, 8), (0, 16), (-8, 8))
     for i, ax in enumerate("XYZ"):
-        if lo[i] < -LIMIT or hi[i] > LIMIT:
-            problemas.append(f"{ax} fora de +-{LIMIT}: {lo[i]}..{hi[i]}")
-    # pelo menos 1px dentro do bloco base
-    base = [(-8, 8), (0, 16), (-8, 8)]
+        if lo2[i] < limites[i][0] - 0.01 or hi2[i] > limites[i][1] + 0.01:
+            problemas.append(f"{ax} fora do cubo do bloco: {lo2[i]:.3f}..{hi2[i]:.3f}")
+    for bone in g["bones"]:
+        for c in bone.get("cubes", []):
+            r = c.get("rotation")
+            if r and (sum(1 for v in r if abs(v) > 1e-9) > 1 or any(abs(v) % STEP > 1e-9 for v in r)):
+                problemas.append(f"rotacao invalida: {r}")
+
+    os.makedirs(os.path.dirname(DST), exist_ok=True)
+    with open(DST, "w") as f:
+        json.dump(d, f, indent="\t")
+        f.write("\n")
+
+    print(f"escala aplicada: {escala:.4f}  (o modelo tinha "
+          f"{tamanho[0]:.1f} x {tamanho[1]:.1f} x {tamanho[2]:.1f} px)")
+    print(f"rotacoes reduzidas a um eixo: {girados}")
+    print("bounding box final:")
     for i, ax in enumerate("XYZ"):
-        if hi[i] <= base[i][0] or lo[i] >= base[i][1]:
-            problemas.append(f"{ax} nao encosta no bloco base")
-
-    json.dump(d, open(DST, "w"), indent="\t")
-    open(DST, "a").write("\n")
-
-    print(f"rotacoes reduzidas a um eixo: {rot_fixed}")
-    print(f"rotacoes zeradas e removidas: {rot_dropped}")
-    print(f"coordenadas de UV corrigidas: {uv_fixed}")
-    print("bounding box final:", [(round(lo[i], 2), round(hi[i], 2)) for i in range(3)])
-    print("limites de bloco:", "OK" if not problemas else "*** " + "; ".join(problemas))
+        print(f"  {ax}: {lo2[i]:7.3f} .. {hi2[i]:7.3f}")
+    print("regras de geometria de bloco:", "OK" if not problemas else "*** " + "; ".join(problemas))
     return 1 if problemas else 0
 
 

@@ -115,31 +115,32 @@ O fundo (`textures/ui/incubator_gui`) tem só o painel, a moldura e os veios de
 lava. Os dois são gerados por `tools/gen_ui_textures.py`, com a paleta amostrada
 do mock-up: fundo `#652828`, célula `#501B1B`, sombra `#411616`, brilho `#883D3D`.
 
-### Por que o bloco pode sumir
+### O modelo do bloco
 
-O modelo tem 24×23×24 px, ou seja **passa do cubo do próprio bloco**. Três
-coisas foram acertadas por causa disso:
+O arquivo do Blockbench (`tools/incubator_original.geo.json`) foi autorado como
+modelo de **entidade**: 24×23×24 px — uma vez e meia o cubo do bloco — e 24
+cubos com rotação livre nos três eixos. Geometria de **bloco** é bem mais
+apertada, então `tools/fix_block_geo.py` gera a versão de bloco a partir dele:
 
-- `render_method` é **`alpha_test`**, não `opaque`. O render de bloco opaco
-  corta faces pelas bordas do cubo e do chunk — modelo que vaza do bloco some.
-- `visible_bounds_width` era **4** (4 blocos), acima do limite de 1,875 de
-  geometria de bloco. Agora é 2, como no add-on de referência que renderiza.
+1. **escala tudo por igual até caber em 16×16×16** (fator 0,6672) e assenta a
+   base no `y=0`. A base octogonal do original ficava pra fora do cubo nos
+   quatro lados;
+2. **reduz cada rotação ao eixo de maior ângulo**, arredondado pro passo de
+   22,5° — bloco só aceita rotação em um eixo nesse passo;
+3. ajusta `visible_bounds` pro tamanho novo;
+4. confere no fim que nada ficou fora das regras (e falha se ficou).
+
+As UVs não mudam: são coordenadas de textura, não de espaço. Reexportou o
+modelo? Substitua `tools/incubator_original.geo.json` e rode o script.
+
+Junto com isso, três coisas que também derrubavam o bloco:
+
+- `render_method` é **`alpha_test`**, não `opaque` — render de bloco opaco corta
+  faces pelas bordas do cubo e do chunk.
 - **Não existe `blocks.json`** no resource pack. Bloco customizado que usa
   `minecraft:material_instances` não precisa dele, e uma entrada ali sem
   `textures` faz o cliente cair no caminho de bloco vanilla.
-
-### O modelo do bloco
-
-O modelo veio autorado como modelo de **entidade**: 24 cubos com rotação livre
-nos três eixos. Geometria de **bloco** no Bedrock só aceita rotação em um eixo,
-em passos de 22,5° — modelo recusado é bloco invisível, que era o sintoma.
-`tools/fix_block_geo.py` reduz cada rotação ao eixo dominante, arredonda pro
-passo válido e confere os limites documentados (±30px do centro da base, e pelo
-menos 1px dentro do bloco base). O original está em
-`tools/incubator_original.geo.json`.
-
-Se for reexportar o modelo, rode o script de novo — ou modele já dentro das
-regras de bloco no Blockbench.
+- `visible_bounds_width` era 4 blocos, acima do limite de geometria de bloco.
 
 ## Limitações conhecidas
 
