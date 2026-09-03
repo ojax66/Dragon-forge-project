@@ -10,11 +10,15 @@
 				"sallytek:lit": [
 					false,
 					true
+				],
+				"sallytek:placed": [
+					false,
+					true
 				]
 			}
 		},
 		"components": {
-			"minecraft:geometry": "geometry.Incubator_fire",
+			"minecraft:geometry": "geometry.incubator_item",
 			"minecraft:material_instances": {
 				"*": {
 					"texture": "incubator_unlit",
@@ -56,14 +60,14 @@
 		},
 		"permutations": [
 			{
-				"condition": "query.block_state('sallytek:lit') == true",
+				"condition": "q.block_state('sallytek:placed') == true",
 				"components": {
-					"minecraft:material_instances": {
-						"*": {
-							"texture": "incubator_lit",
-							"render_method": "alpha_test"
-						}
-					},
+					"minecraft:geometry": "geometry.incubator_empty"
+				}
+			},
+			{
+				"condition": "q.block_state('sallytek:lit') == true",
+				"components": {
 					"minecraft:light_emission": 8
 				}
 			}

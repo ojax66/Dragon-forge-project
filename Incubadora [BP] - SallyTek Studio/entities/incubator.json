@@ -5,7 +5,17 @@
 			"identifier": "sallytek:incubator",
 			"is_summonable": true,
 			"is_spawnable": false,
-			"is_experimental": false
+			"is_experimental": false,
+			// O render controller do resource pack le esta propriedade pra
+			// escolher entre a textura apagada e a acesa. client_sync e o que
+			// faz o valor chegar no cliente.
+			"properties": {
+				"sallytek:lit": {
+					"type": "bool",
+					"default": false,
+					"client_sync": true
+				}
+			}
 		},
 		"component_groups": {
 			"sallytek:normal_hitbox": {

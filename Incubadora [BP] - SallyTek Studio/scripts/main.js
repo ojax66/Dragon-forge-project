@@ -52,6 +52,8 @@ const EMPTY_BUCKET = "minecraft:bucket";
 
 const PROP_FUEL = "sallytek:fuel";
 const PROP_PROGRESS = "sallytek:progress";
+// propriedade de entidade lida pelo render controller do resource pack
+const PROP_LIT = "sallytek:lit";
 
 // Tabela de receitas: item de entrada -> item de saida. Edite/adicione a vontade.
 const HATCH_RECIPES = {
@@ -79,7 +81,11 @@ function findCore(dimension, loc) {
 world.afterEvents.playerPlaceBlock.subscribe((ev) => {
 	const block = ev.block;
 	if (block.typeId !== BLOCK_ID) return;
-	block.setPermutation(block.permutation.withState("sallytek:lit", false));
+	// "placed" troca a geometria do bloco por uma vazia: o modelo original
+	// quem desenha e a entidade. A geometria base so serve pro icone do item.
+	block.setPermutation(block.permutation
+		.withState("sallytek:lit", false)
+		.withState("sallytek:placed", true));
 	if (!findCore(ev.dimension, block.location)) {
 		summonCore(ev.dimension, block.location);
 	}
@@ -111,6 +117,7 @@ world.afterEvents.playerInteractWithBlock.subscribe((ev) => {
 	if (block.typeId !== BLOCK_ID) return;
 	if (!findCore(block.dimension, block.location)) {
 		summonCore(block.dimension, block.location);
+		block.setPermutation(block.permutation.withState("sallytek:placed", true));
 		ev.player.onScreenDisplay.setActionBar("§eIncubadora religada. Clique de novo pra abrir.");
 	}
 });
@@ -190,9 +197,18 @@ function tickIncubator(core) {
 
 	updateGauges(core, container, fuel, progress);
 
+	// O bloco fica invisivel e so responde pela luz; quem troca entre a
+	// textura apagada e a acesa e o render controller da entidade, lendo a
+	// propriedade sallytek:lit.
 	const isLit = working;
-	if (block.permutation.getState("sallytek:lit") !== isLit) {
-		block.setPermutation(block.permutation.withState("sallytek:lit", isLit));
+	if (core.getProperty(PROP_LIT) !== isLit) {
+		core.setProperty(PROP_LIT, isLit);
+	}
+	if (block.permutation.getState("sallytek:lit") !== isLit ||
+		block.permutation.getState("sallytek:placed") !== true) {
+		block.setPermutation(block.permutation
+			.withState("sallytek:lit", isLit)
+			.withState("sallytek:placed", true));
 	}
 }
 

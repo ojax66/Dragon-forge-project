@@ -1,0 +1,25 @@
+{
+	"format_version": "1.10.0",
+	"minecraft:client_entity": {
+		"description": {
+			"identifier": "sallytek:incubator",
+
+			"materials": {
+				"default": "entity_alphatest"
+			},
+
+			"textures": {
+				"unlit": "textures/blocks/incubator_unlit",
+				"lit": "textures/blocks/incubator_lit"
+			},
+
+			"geometry": {
+				"default": "geometry.Incubator_fire"
+			},
+
+			"render_controllers": [
+				"controller.render.incubator"
+			]
+		}
+	}
+}

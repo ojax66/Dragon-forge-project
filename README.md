@@ -115,34 +115,37 @@ O fundo (`textures/ui/incubator_gui`) tem só o painel, a moldura e os veios de
 lava. Os dois são gerados por `tools/gen_ui_textures.py`, com a paleta amostrada
 do mock-up: fundo `#652828`, célula `#501B1B`, sombra `#411616`, brilho `#883D3D`.
 
-### O modelo do bloco
+### Quem desenha o modelo é a entidade
 
-O modelo vai **sem edição nenhuma**: `tools/fix_block_geo.py` não move, escala,
-rotaciona nem descarta cubo algum. Origem, tamanho, rotação, `inflate` e UV de
-cada um dos 53 cubos saem idênticos ao arquivo do Blockbench, e o script
-confere isso comparando os 424 vértices um a um — falha se algum sair do lugar.
+O arquivo do Blockbench é um modelo de **entidade**, e isso não é opinião: são
+24 cubos com rotação livre nos três eixos, dois ossos com hierarquia (`parent`),
+pivô em `[16, 0, 0]` e 24×23×24 px. Geometria de **bloco** não aceita nenhuma
+dessas quatro coisas. Tentar adaptar custou várias rodadas e sempre saía
+invisível ou corrompendo o desenho em volta.
 
-O que ele arruma é só estrutura, duas coisas que são de modelo de **entidade** e
-não existem em geometria de bloco:
+A saída é usar a entidade que **já existe** dentro do bloco pro contêiner: ela
+também passou a desenhar o modelo. Modelo de entidade não tem limite de
+tamanho, de rotação nem de hierarquia de osso, então o arquivo vai **copiado
+byte a byte** (`tools/fix_block_geo.py` confere).
 
-- o osso `water_and_lava` tinha **`parent`** — hierarquia de osso é coisa de
-  entidade; bloco espera uma lista de cubos;
-- os dois ossos tinham **`pivot: [16, 0, 0]`**, um bloco inteiro longe da
-  origem. Pivô só serve como centro de rotação do osso, e nenhum dos dois gira —
-  então zerar não move nada.
+| arquivo | quem usa | o que é |
+|---|---|---|
+| `models/entity/incubator.geo.json` | a entidade, no mundo | o original, sem tocar |
+| `models/blocks/incubator_item.geo.json` | só o ícone do item | os 29 cubos sem rotação, escalados pra caber no bloco |
+| `models/blocks/incubator_empty.geo.json` | o bloco depois de colocado | vazia |
 
-Como nenhum osso gira, juntar tudo num osso só com pivô na origem dá exatamente
-o mesmo desenho, numa estrutura que o render de bloco entende.
+O bloco ganhou o estado `sallytek:placed`. Em `false` (que é o estado do **item**
+no inventário) ele usa a geometria do ícone; o script liga `true` assim que o
+bloco é colocado, e aí a permutação troca por geometria vazia — o bloco some e
+o palco fica pro modelo da entidade. O brilho continua sendo do bloco:
+`sallytek:lit == true` dá `light_emission: 8`, como no original.
 
-As texturas do bloco (`incubator_lit.png`, `incubator_unlit.png`) são as
-originais, byte a byte.
+A troca entre textura apagada e acesa é do render controller
+(`render_controllers/incubator.render_controllers.json`), que lê a propriedade
+de entidade `sallytek:lit` — declarada com `client_sync: true` pra chegar no
+cliente, e escrita pelo script com `core.setProperty`.
 
-**Se ainda assim não renderizar**, o modelo tem duas coisas que geometria de
-bloco não aceita e que não dá pra arrumar sem mexer na forma: 24 cubos com
-rotação livre nos três eixos (bloco só aceita um eixo, em passo de 22,5°) e
-24×23×24 px de tamanho. Aí o único jeito de mostrar esse modelo exato é
-renderizá-lo na entidade — modelo de entidade não tem nenhuma dessas restrições,
-e este foi autorado como um.
+As texturas do bloco são as originais, byte a byte.
 
 ## Limitações conhecidas
 

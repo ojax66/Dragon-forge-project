@@ -1,0 +1,22 @@
+{
+	"format_version": "1.10.0",
+	"render_controllers": {
+		"controller.render.incubator": {
+			"geometry": "Geometry.default",
+			"materials": [
+				{ "*": "Material.default" }
+			],
+			"textures": [
+				"Array.skins[query.property('sallytek:lit')]"
+			],
+			"arrays": {
+				"textures": {
+					"Array.skins": [
+						"Texture.unlit",
+						"Texture.lit"
+					]
+				}
+			}
+		}
+	}
+}
