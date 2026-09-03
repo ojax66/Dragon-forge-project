@@ -200,7 +200,8 @@ function tickIncubator(core) {
 	// O bloco fica invisivel e so responde pela luz; quem troca entre a
 	// textura apagada e a acesa e o render controller da entidade, lendo a
 	// propriedade sallytek:lit.
-	const isLit = working;
+	// Acende assim que tem lava no tanque - nao so enquanto esta chocando.
+	const isLit = fuel > 0;
 	if (core.getProperty(PROP_LIT) !== isLit) {
 		core.setProperty(PROP_LIT, isLit);
 	}

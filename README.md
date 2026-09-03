@@ -145,6 +145,12 @@ A troca entre textura apagada e acesa é do render controller
 de entidade `sallytek:lit` — declarada com `client_sync: true` pra chegar no
 cliente, e escrita pelo script com `core.setProperty`.
 
+**Quando ela acende:** `sallytek:lit` liga com **lava no tanque**
+(`fuel > 0` em `scripts/main.js`), não só enquanto está chocando. Ou seja: pôs o
+balde, ela já fica com a textura de lava (`textures/blocks/incubator_lit`) e com
+`light_emission: 8`, e só apaga quando o tanque zera. Como o relógio da entidade
+bate 1x por segundo, a troca acontece no tique seguinte ao balde.
+
 As texturas do bloco são as originais, byte a byte.
 
 ## Limitações conhecidas
