@@ -31,8 +31,10 @@ ARROW_SIZE = (32, 32)        # a setinha
 FUEL_SIZE = (72, 266)        # a barra vertical de abastecimento
 
 LANG = {
-    "en_US.lang": {"tile": "Incubator", "block": "Incubator", "fuel": "Lava", "arrow": "Progress"},
-    "pt_BR.lang": {"tile": "Incubadora", "block": "Incubadora", "fuel": "Lava", "arrow": "Progresso"},
+    "en_US.lang": {"tile": "Incubator", "block": "Incubator", "fuel": "Lava", "arrow": "Progress",
+                   "egg": "Skrill Egg", "egg_hatched": "Hatched Skrill Egg"},
+    "pt_BR.lang": {"tile": "Incubadora", "block": "Incubadora", "fuel": "Lava", "arrow": "Progresso",
+                   "egg": "Ovo de Skrill", "egg_hatched": "Ovo de Skrill Chocado"},
 }
 
 
@@ -212,8 +214,16 @@ def regenerate(n_fuel, n_arrow):
     for fn, t in LANG.items():
         lines = [
             f"tile.sallytek:incubator.name={t['tile']}",
+            f"tile.sallytek:skrill_egg.name={t['egg']}",
+            f"tile.sallytek:skrill_egg_hatched.name={t['egg_hatched']}",
             "",
-            "## titulo do container (nome da entidade invisivel)",
+            "## A entidade do container nao leva mais nameTag - assim o bloco nao",
+            "## mostra nome nenhum no mundo. Estas duas chaves so existem porque o",
+            "## titulo do container pode cair em qualquer uma das duas, dependendo",
+            "## de como o jogo resolve o nome de uma entidade sem apelido; ui/",
+            "## chest_screen.json compara as duas. A terceira e o nome antigo, pras",
+            "## incubadoras que ja estavam colocadas antes desta versao.",
+            f"entity.sallytek:incubator.name={t['block']}",
             f"sallytek.incubator.block={t['block']}",
             "",
             "## itens-display das barras",

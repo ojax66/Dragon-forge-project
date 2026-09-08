@@ -32,6 +32,8 @@
 			}
 		},
 		"components": {
+			// A entidade nasce sem apelido (scripts/main.js) e ninguem pode dar
+			// um: e assim que a Incubadora nao mostra nome nenhum no mundo.
 			"minecraft:nameable": {
 				"allow_name_tag_renaming": false,
 				"always_show": false

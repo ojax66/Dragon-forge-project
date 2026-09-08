@@ -5,9 +5,14 @@ uma fornalha: você põe um item pra chocar, abastece com balde de lava e o
 progresso corre até sair o resultado.
 
 ```
-Incubadora [BP] - SallyTek Studio/   behavior pack (bloco + script)
-Incubadora [RP] - SallyTek Studio/   resource pack (modelo, texturas e UI)
+Incubadora [BP] - SallyTek Studio/   behavior pack (blocos + script)
+Incubadora [RP] - SallyTek Studio/   resource pack (modelos, texturas e UI)
+tools/                               scripts que geram/instalam os assets
+tools/frames/                        os quadros das barras, como vieram
 ```
+
+Blocos: `sallytek:incubator`, `sallytek:skrill_egg` e
+`sallytek:skrill_egg_hatched`.
 
 ## Como a interface foi feita
 
@@ -63,7 +68,20 @@ numerado, e regenera o que depende da contagem: os itens-display, o
 do `scripts/main.js`. Se a série não tiver um quadro vazio, ele gera um tirando
 o preenchimento do menor quadro.
 
-Hoje: **10 quadros de setinha** e **5 de abastecimento**.
+Os quadros ficam versionados em `tools/frames/`, entao dá pra rodar de novo a
+qualquer momento sem depender do chat.
+
+Hoje: **6 quadros de setinha** e **7 de abastecimento** — ou seja, o tanque
+guarda **6 baldes**, e cada balde continua valendo **1 ponto**.
+
+**Dois quadros foram montados aqui, não vieram no lote.** As duas séries são
+espaçadas por igual e faltava um degrau em cada uma: o nível 2 do tanque (a
+lava sobe 43px por marca, e vieram 1, 3, 4, 5 e 6) e o estágio 1 da setinha (o
+preenchimento anda 5px por quadro, e vieram 10, 15, 20 e 25). Como os quadros
+de cada série são idênticos abaixo da linha de preenchimento — conferido pixel
+a pixel —, dá pra montar o que falta recortando os que vieram, sem inventar
+desenho: é o que `tools/frames/fuel_2.png` e `tools/frames/arrow_1.png` são.
+Mandando os originais, é só sobrescrever os dois arquivos e rodar o instalador.
 
 ### Ordem dos slots
 
@@ -111,9 +129,15 @@ célula assada no fundo: quem desenha é o próprio JSON UI, em cima do slot de
 verdade, então nunca sai do lugar. O mesmo arquivo estica pro tanque (18×61) e
 pra saída (26×26).
 
-O fundo (`textures/ui/incubator_gui`) tem só o painel, a moldura e os veios de
-lava. Os dois são gerados por `tools/gen_ui_textures.py`, com a paleta amostrada
-do mock-up: fundo `#652828`, célula `#501B1B`, sombra `#411616`, brilho `#883D3D`.
+O fundo (`textures/ui/incubator_gui`) é só painel, moldura e o friso que separa
+a máquina do inventário — **sem os veios de lava** que a versão anterior tinha.
+Eles eram invenção minha, brigavam com as barras (que já são a lava de verdade)
+e sujavam o fundo das células.
+
+Os dois arquivos saem de `tools/gen_ui_textures.py`. A paleta agora é amostrada
+da arte que veio no pacote, não de um mock-up: o interior da célula `#501B1B` é
+exatamente a cor do corpo do tanque, o contorno externo `#220B0B` é a sombra
+funda dele e `#310D0D` é o contorno da setinha. Fundo do painel `#652828`.
 
 ### Quem desenha o modelo é a entidade
 
@@ -151,7 +175,70 @@ balde, ela já fica com a textura de lava (`textures/blocks/incubator_lit`) e co
 `light_emission: 8`, e só apaga quando o tanque zera. Como o relógio da entidade
 bate 1x por segundo, a troca acontece no tique seguinte ao balde.
 
-As texturas do bloco são as originais, byte a byte.
+### Só existe uma textura pintada
+
+O modelo tem um osso só pra chapa de lava (`water_and_lava`), e a arte que vem
+do Blockbench é a **com lava**. A versão apagada é a mesma arte com todo pixel
+de lava em alpha 0 — não é escolha minha, é a regra do par que já estava no
+pacote: refazendo a apagada antiga a partir da acesa antiga, o resultado bate em
+4082 dos 4096 pixels (os 14 que sobram são retoques de cinza). Quem faz isso é
+
+```sh
+python3 tools/make_block_textures.py <incubadora_com_lava.png>
+```
+
+que grava `incubator_lit.png` como cópia literal do arquivo e deriva
+`incubator_unlit.png`. `--conferir` refaz a conta em cima do par instalado.
+
+## O bloco não tem nome
+
+Duas coisas mostravam nome, e as duas saíram:
+
+1. **Em cima do bloco, no mundo.** A entidade do contêiner levava um apelido
+   (`nameTag`), e com apelido o Bedrock desenha o nome flutuando toda vez que a
+   mira encosta na entidade. Agora ela nasce **sem apelido**, e
+   `minecraft:nameable` continua com `allow_name_tag_renaming: false` pra
+   ninguém conseguir dar um com etiqueta. Incubadora colocada antes desta versão
+   perde o apelido no primeiro tique do relógio — não dá pra fazer isso no
+   evento de clicar no bloco, porque com a entidade no lugar o clique vai nela
+   e o evento do bloco nem acontece.
+2. **No alto da tela.** O rótulo de título saiu de `ui/incubator_screen.json`.
+
+Sem apelido, o título do contêiner deixa de ser uma string escolhida por mim e
+passa a ser o nome da própria entidade — e o Bedrock pode entregar isso de três
+jeitos (vazio, a chave de tradução crua, ou ela já traduzida). Por isso a
+porteira de `ui/chest_screen.json` aceita as três formas, mais o apelido antigo,
+mais o nome em inglês. Baú e barril não passam por nenhuma delas: o título deles
+é `container.chest` / `container.barrel`.
+
+O **item** continua com nome (`Incubadora`) — é o que aparece no inventário e no
+criativo; sem isso ele ficaria com o identificador cru na mão.
+
+## O ovo de Skrill
+
+Dois blocos, mesmo modelo (`geometry.eggs_block`, copiado do Blockbench sem
+tocar), só muda a textura:
+
+| bloco | textura | onde entra |
+|---|---|---|
+| `sallytek:skrill_egg` | `textures/blocks/skrill_egg` | é o que se põe pra chocar |
+| `sallytek:skrill_egg_hatched` | `textures/blocks/skrill_egg_hatched` | é o que sai |
+
+A ligação entre os dois é uma linha da tabela de receitas do `scripts/main.js`:
+
+```js
+const HATCH_RECIPES = {
+	"sallytek:skrill_egg": "sallytek:skrill_egg_hatched",
+	...
+};
+```
+
+Os dois são blocos de verdade, então dá pra colocar no mundo e o item deles é o
+que circula pela Incubadora.
+
+**A arte do ovo chocado ainda não chegou**, então `skrill_egg_hatched.png` é hoje
+uma cópia de `skrill_egg.png` — o bloco funciona e nada fica sem textura, mas os
+dois estão iguais. Trocar é sobrescrever esse arquivo, nada mais.
 
 ## Limitações conhecidas
 
@@ -167,11 +254,22 @@ As texturas do bloco são as originais, byte a byte.
   em vez de voltar pro slot, que continua ocupado.
 - O bloco quebrado por explosão ou `/setblock` só devolve o conteúdo no próximo
   tique da entidade.
-- Os 24 cubos rotacionados do modelo ficaram com a rotação arredondada, então o
-  bloco não é pixel a pixel igual ao arquivo original do Blockbench.
+- O ovo é um bloco comum e usa o modelo direto em `minecraft:geometry`. Se ele
+  aparecer invisível, é a mesma pedra no caminho que a Incubadora tropeçou, e a
+  saída é a mesma: passar o desenho pra uma entidade.
 
-## Assets gerados
+## O que foi gerado aqui, e não veio pronto
 
-`textures/ui/incubator_gui.png` (o fundo 176x166 da tela) foi criado pra este
-add-on — o pacote original só tinha as barras e as texturas do bloco. O script
-que gera ele está em `tools/gen_gui_texture.py`.
+| arquivo | como sai |
+|---|---|
+| `textures/ui/incubator_gui.png` | `tools/gen_ui_textures.py` |
+| `textures/ui/incubator_cell.png` | `tools/gen_ui_textures.py` |
+| `textures/blocks/incubator_unlit.png` | `tools/make_block_textures.py` (deriva da acesa) |
+| `models/blocks/incubator_item.geo.json` | `tools/fix_block_geo.py` (só o ícone do item) |
+| `models/blocks/incubator_empty.geo.json` | `tools/fix_block_geo.py` |
+| `textures/items/incubator_*.png` | `tools/install_gauge_textures.py` |
+| `tools/frames/fuel_2.png`, `tools/frames/arrow_1.png` | recorte dos quadros vizinhos |
+| `textures/blocks/skrill_egg_hatched.png` | cópia provisória do ovo não chocado |
+
+Todo o resto — modelo da Incubadora, textura da Incubadora, modelo do ovo,
+textura do ovo, quadros das barras — é arquivo do autor, copiado sem edição.

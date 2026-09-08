@@ -3,15 +3,9 @@
 
   // Posicoes medidas no mock-up de referencia (284x266 = uma tela de 176x166
   // renderizada em 1.611x). Ver tools/gen_ui_textures.py.
-  "title_label": {
-    "type": "label",
-    "offset": [ 58, 6 ],
-    "anchor_from": "top_left",
-    "anchor_to": "top_left",
-    "text": "$container_title",
-    "color": "$title_text_color",
-    "layer": 4
-  },
+  //
+  // Nao existe rotulo de titulo aqui de proposito: a Incubadora nao tem nome
+  // nenhum - nem em cima do bloco no mundo, nem no alto da tela.
 
   "inventory_label": {
     "type": "label",
@@ -95,7 +89,6 @@
     "anchor_from": "center",
     "anchor_to": "center",
     "controls": [
-      { "title@incubator_ui.title_label": {} },
       { "inventory@incubator_ui.inventory_label": {} },
       { "slots@incubator_ui.slots_grid": {} }
     ]

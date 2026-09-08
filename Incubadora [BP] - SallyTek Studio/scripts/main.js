@@ -12,10 +12,13 @@ console.warn("[Incubadora] script carregado - @minecraft/server 2.9.0");
    colocada dentro do bloco. Clicar no bloco acerta a entidade
    e abre o container dela.
 
-   O nome dado no summon vira o titulo do container, e o
-   resource pack usa esse titulo em ui/chest_screen.json pra
-   trocar a tela de bau pela tela da Incubadora. Qualquer outro
-   bau do mundo continua com a tela normal.
+   A entidade NAO leva nameTag: com apelido, o Bedrock desenha
+   o nome flutuando em cima do bloco toda vez que a mira encosta
+   nele, e a Incubadora nao pode ter nome. Sem apelido o titulo
+   do container cai no nome da propria entidade, e a porteira de
+   ui/chest_screen.json aceita todas as formas que esse titulo
+   pode ter. Qualquer outro bau do mundo continua com a tela
+   normal.
 
    A ordem dos slots abaixo PRECISA bater com a grade de
    ui/incubator_screen.json.
@@ -23,10 +26,6 @@ console.warn("[Incubadora] script carregado - @minecraft/server 2.9.0");
 
 const BLOCK_ID = "sallytek:incubator";
 const ENTITY_ID = "sallytek:incubator";
-
-// Titulo do container. E tambem a chave de traducao no .lang e o valor
-// comparado em ui/chest_screen.json. Nao traduza aqui.
-const CONTAINER_NAME = "sallytek.incubator.block";
 
 // Slots do container da entidade
 const SLOT_FUEL_GAUGE = 0;   // item-display: barra de lava
@@ -37,8 +36,8 @@ const SLOT_OUTPUT = 4;       // resultado
 
 // Contagens de quadros das barras. Quem mexe nelas e
 // tools/install_gauge_textures.py - rode ele depois de trocar as texturas.
-const ARROW_STAGES = 10;      // quadros de sallytek:incubator_arrow_*
-const FUEL_POINTS = 4;      // capacidade do tanque, em baldes
+const ARROW_STAGES = 6;      // quadros de sallytek:incubator_arrow_*
+const FUEL_POINTS = 6;      // capacidade do tanque, em baldes
 
 // Balanceamento: cada balde rende 20s de forno e chocar leva 60s, ou seja
 // 3 baldes por item. O tanque cheio (4 baldes) da pra um item e sobra troco.
@@ -57,6 +56,7 @@ const PROP_LIT = "sallytek:lit";
 
 // Tabela de receitas: item de entrada -> item de saida. Edite/adicione a vontade.
 const HATCH_RECIPES = {
+	"sallytek:skrill_egg": "sallytek:skrill_egg_hatched",
 	"minecraft:egg": "minecraft:chicken_spawn_egg"
 };
 
@@ -69,9 +69,10 @@ function isGaugeItem(itemId) {
 /* ------------------------------ colocar/quebrar ---------------------------- */
 
 function summonCore(dimension, loc) {
-	// O nome vira o titulo do container - e o que o JSON UI compara.
-	dimension.spawnEntity(ENTITY_ID, { x: loc.x + 0.5, y: loc.y, z: loc.z + 0.5 })
-		.nameTag = CONTAINER_NAME;
+	// Sem nameTag de proposito: apelido faz o Bedrock desenhar o nome em cima
+	// do bloco. Sem ele o titulo do container vira o nome da propria entidade,
+	// que e o que ui/chest_screen.json compara.
+	dimension.spawnEntity(ENTITY_ID, { x: loc.x + 0.5, y: loc.y, z: loc.z + 0.5 });
 }
 
 function findCore(dimension, loc) {
@@ -151,6 +152,12 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
 function tickIncubator(core) {
 	const container = core.getComponent("minecraft:inventory")?.container;
 	if (!container) return;
+
+	// Incubadora colocada antes desta versao veio com apelido, e apelido faz o
+	// Bedrock desenhar o nome em cima do bloco. Tira no primeiro tique. Nao da
+	// pra fazer isso no evento de clicar no bloco: com a entidade no lugar, o
+	// clique vai nela e o evento do bloco nem acontece.
+	if (core.nameTag) core.nameTag = "";
 
 	const block = core.dimension.getBlock(core.location);
 	if (!block || block.typeId !== BLOCK_ID) {

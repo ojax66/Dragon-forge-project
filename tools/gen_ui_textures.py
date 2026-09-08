@@ -8,8 +8,8 @@ A celula NAO e desenhada no fundo: ela e uma textura propria, aplicada pelo
 JSON UI em cada slot via $background_images. Assim as celulas caem sempre em
 cima dos slots de verdade, sem depender de eu acertar o pixel na arte.
 
-Paleta e medidas tiradas do mock-up (284x266, que e uma tela de 176x166
-renderizada em 1.611x).
+As medidas sao as do mock-up (284x266, que e uma tela de 176x166 renderizada
+em 1.611x). A paleta e amostrada das barras que vieram no pacote.
 """
 import math, os, random, struct, zlib
 
@@ -19,19 +19,19 @@ OUT = os.path.join(ROOT, "Incubadora [RP] - SallyTek Studio", "textures", "ui")
 W, H = 176, 166          # tela inteira, igual a de bau/fornalha da vanilla
 CELL = 18
 
-# ---- paleta amostrada do mock-up ----
+# ---- paleta: amostrada da arte das barras que vem no pacote ----------------
+# O corpo do tanque (textures/items/incubator_fuel_0) e o contorno da setinha
+# sao a referencia: a tela tem que parecer o mesmo material que os medidores.
 BG        = (101, 40, 40)    # fundo do painel
-CELL_IN   = (80, 27, 27)     # interior da celula
+CELL_IN   = (80, 27, 27)     # interior da celula = corpo do tanque
 CELL_SHAD = (65, 22, 22)     # sombra da celula (cima/esquerda)
 CELL_LITE = (136, 61, 61)    # brilho da celula (baixo/direita)
-EDGE_OUT  = (28, 7, 7)       # contorno externo do painel
-EDGE_MID  = (83, 34, 34)
-EDGE_LITE = (138, 61, 61)    # bisel claro (cima/esquerda)
+EDGE_OUT  = (34, 11, 11)     # contorno externo = sombra funda do tanque
+EDGE_MID  = (49, 13, 13)     # contorno da setinha
+EDGE_LITE = (136, 61, 61)    # bisel claro (cima/esquerda)
 EDGE_SOFT = (116, 51, 51)
 EDGE_DARK = (49, 16, 16)     # bisel escuro (baixo/direita)
-LAVA      = (222, 104, 24)   # nucleo do veio
-LAVA_HOT  = (250, 160, 60)   # brilho
-LAVA_EDGE = (150, 55, 14)   # borda do veio
+GROOVE    = (64, 21, 21)     # friso que separa a maquina do inventario
 
 # Nicho do tanque: e a mesma celula esticada pelo JSON UI, entao aqui so
 # ficam registradas as medidas pra quem for conferir com o mock-up.
@@ -80,7 +80,15 @@ def gen_cell():
 
 # ----------------------------------------------------------- fundo 176x166
 def gen_background():
-    rnd = random.Random(20260830)
+    """Painel liso, sem desenho nenhum atras dos slots.
+
+    A versao anterior tinha veios de lava inventados por mim correndo pela
+    tela; eles brigavam com as barras (que ja sao a lava de verdade) e sujavam
+    o fundo das celulas. Agora e so pedra escura com granulado leve, o friso
+    que separa a maquina do inventario e a moldura - quem da cor sao os
+    medidores e as celulas, desenhados por cima pelo JSON UI.
+    """
+    rnd = random.Random(20260908)
     px = [[list(BG) + [255] for _ in range(W)] for _ in range(H)]
 
     # manchas largas e suaves, pra pedra nao ficar chapada
@@ -92,7 +100,7 @@ def gen_background():
             for x in range(max(0, cx - r), min(W, cx + r)):
                 d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
                 if d < r:
-                    put(px, x, y, tint, int(34 * (1 - d / r)))
+                    put(px, x, y, tint, int(30 * (1 - d / r)))
 
     for y in range(H):
         for x in range(W):
@@ -100,44 +108,10 @@ def gen_background():
             for i in range(3):
                 px[y][x][i] = max(0, min(255, px[y][x][i] + n))
 
-    # veios de lava finos e claros, como no mock-up: nucleo laranja vivo com
-    # uma borda laranja escura - nada de contorno preto grosso
-    def vein(x, y, ang, life, width, depth=0):
-        for step in range(life):
-            ang += rnd.uniform(-0.13, 0.13)
-            x += math.cos(ang)
-            y += math.sin(ang)
-            if not (0 <= x < W and 0 <= y < H):
-                return
-            ix, iy = int(x), int(y)
-            w = width * (1 - 0.55 * step / life)
-            r_edge = max(1, int(round(w + 0.5)))
-            for oy in range(-r_edge, r_edge + 1):
-                for ox in range(-r_edge, r_edge + 1):
-                    if ox * ox + oy * oy <= r_edge * r_edge:
-                        put(px, ix + ox, iy + oy, LAVA_EDGE, 150)
-            r_core = max(0, int(round(w - 0.4)))
-            for oy in range(-r_core, r_core + 1):
-                for ox in range(-r_core, r_core + 1):
-                    if ox * ox + oy * oy <= r_core * r_core:
-                        put(px, ix + ox, iy + oy, LAVA)
-            if rnd.random() < 0.35:
-                put(px, ix, iy, LAVA_HOT)
-            if depth < 1 and rnd.random() < 0.022:
-                vein(x, y, ang + rnd.choice([-1, 1]) * rnd.uniform(0.5, 1.0),
-                     int(life * 0.5), width * 0.7, depth + 1)
-
-    # A metade de baixo fica coberta pela grade, entao os veios nascem na area
-    # da maquina (y < 84), que e a parte da arte que realmente aparece.
-    for _ in range(3):
-        borda = rnd.randrange(3)
-        if borda == 0:   sx, sy, a = rnd.randrange(20, W - 20), 4, math.pi / 2
-        elif borda == 1: sx, sy, a = 4, rnd.randrange(10, 80), 0.0
-        else:            sx, sy, a = W - 5, rnd.randrange(10, 80), math.pi
-        vein(sx, sy, a + rnd.uniform(-0.8, 0.8), rnd.randrange(70, 130), rnd.uniform(1.0, 1.6))
-    # um escapando por baixo, so pra nao ficar seco
-    vein(rnd.randrange(W), H - 5, -math.pi / 2 + rnd.uniform(-0.7, 0.7),
-         rnd.randrange(40, 70), rnd.uniform(0.9, 1.3))
+    # friso entre a maquina e o inventario, logo acima da grade 9x3 (y = 86)
+    for x in range(6, W - 6):
+        put(px, x, 79, GROOVE)
+        put(px, x, 80, EDGE_LITE, 90)
 
     # moldura: contorno escuro, bisel claro em cima/esquerda, escuro embaixo/direita
     for x in range(W):
