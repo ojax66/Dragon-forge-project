@@ -129,15 +129,14 @@ célula assada no fundo: quem desenha é o próprio JSON UI, em cima do slot de
 verdade, então nunca sai do lugar. O mesmo arquivo estica pro tanque (18×61) e
 pra saída (26×26).
 
-O fundo (`textures/ui/incubator_gui`) é só painel, moldura e o friso que separa
-a máquina do inventário — **sem os veios de lava** que a versão anterior tinha.
-Eles eram invenção minha, brigavam com as barras (que já são a lava de verdade)
-e sujavam o fundo das células.
+O fundo (`textures/ui/incubator_gui.png`) é **arte do autor**, 176x166,
+copiada pro pacote sem edição — ninguém gera esse arquivo. `gen_ui_textures.py`
+só faz a célula; ele já teve um gerador de fundo, que saiu justamente pra
+ninguém apagar a arte boa rodando o script sem querer.
 
-Os dois arquivos saem de `tools/gen_ui_textures.py`. A paleta agora é amostrada
-da arte que veio no pacote, não de um mock-up: o interior da célula `#501B1B` é
-exatamente a cor do corpo do tanque, o contorno externo `#220B0B` é a sombra
-funda dele e `#310D0D` é o contorno da setinha. Fundo do painel `#652828`.
+A paleta da célula é amostrada das barras que vieram no pacote: o interior
+`#501B1B` é exatamente a cor do corpo do tanque, e `#411616` / `#883D3D` são a
+sombra e o brilho.
 
 ### Quem desenha o modelo é a entidade
 
@@ -190,26 +189,21 @@ python3 tools/make_block_textures.py <incubadora_com_lava.png>
 que grava `incubator_lit.png` como cópia literal do arquivo e deriva
 `incubator_unlit.png`. `--conferir` refaz a conta em cima do par instalado.
 
-## O bloco não tem nome
+## Sobre o nome do bloco
 
-Duas coisas mostravam nome, e as duas saíram:
+O **rótulo de título saiu da tela** (não existe `title_label` em
+`ui/incubator_screen.json`), e é isso que dá pra fazer sem quebrar nada.
 
-1. **Em cima do bloco, no mundo.** A entidade do contêiner levava um apelido
-   (`nameTag`), e com apelido o Bedrock desenha o nome flutuando toda vez que a
-   mira encosta na entidade. Agora ela nasce **sem apelido**, e
-   `minecraft:nameable` continua com `allow_name_tag_renaming: false` pra
-   ninguém conseguir dar um com etiqueta. Incubadora colocada antes desta versão
-   perde o apelido no primeiro tique do relógio — não dá pra fazer isso no
-   evento de clicar no bloco, porque com a entidade no lugar o clique vai nela
-   e o evento do bloco nem acontece.
-2. **No alto da tela.** O rótulo de título saiu de `ui/incubator_screen.json`.
+O apelido da entidade (`nameTag = "sallytek.incubator.block"`) **ficou**. Ele é
+a única forma comprovada de a porteira de `ui/chest_screen.json` reconhecer que
+o contêiner aberto é a Incubadora. Na versão 1.16.0 a entidade nasceu sem
+apelido pra sumir com o nome flutuante em cima do bloco; o preço foi a tela
+voltar a abrir como baú comum, então o apelido voltou. Quem tinha uma Incubadora
+da 1.16.0 recebe o apelido de volta no primeiro tique do relógio.
 
-Sem apelido, o título do contêiner deixa de ser uma string escolhida por mim e
-passa a ser o nome da própria entidade — e o Bedrock pode entregar isso de três
-jeitos (vazio, a chave de tradução crua, ou ela já traduzida). Por isso a
-porteira de `ui/chest_screen.json` aceita as três formas, mais o apelido antigo,
-mais o nome em inglês. Baú e barril não passam por nenhuma delas: o título deles
-é `container.chest` / `container.barrel`.
+Ou seja: **a mira encostada no bloco ainda mostra o nome flutuando.** Isso é do
+Bedrock — entidade com apelido desenha o apelido — e só sai junto com o apelido,
+que é o que faz a tela funcionar.
 
 O **item** continua com nome (`Incubadora`) — é o que aparece no inventário e no
 criativo; sem isso ele ficaria com o identificador cru na mão.
@@ -233,8 +227,13 @@ const HATCH_RECIPES = {
 };
 ```
 
-Os dois são blocos de verdade, então dá pra colocar no mundo e o item deles é o
-que circula pela Incubadora.
+Os dois são **blocos de verdade** — dá pra colocar no mundo, quebrar e o item
+deles é o que circula pela Incubadora. O modelo vai direto em
+`minecraft:geometry`, sem entidade nenhuma no meio: o arquivo do ovo tem um osso
+só, sem `parent`, e cabe em 12x16x16, então não esbarra em nada do que derrubou
+a Incubadora (lá o problema é a hierarquia de ossos). Rotação livre de cubo, o
+ovo tem, e isso geometria de bloco aceita — o limite de 22,5° é do componente
+`minecraft:transformation`, que gira o bloco inteiro, não dos cubos do modelo.
 
 **A arte do ovo chocado ainda não chegou**, então `skrill_egg_hatched.png` é hoje
 uma cópia de `skrill_egg.png` — o bloco funciona e nada fica sem textura, mas os
@@ -254,15 +253,13 @@ dois estão iguais. Trocar é sobrescrever esse arquivo, nada mais.
   em vez de voltar pro slot, que continua ocupado.
 - O bloco quebrado por explosão ou `/setblock` só devolve o conteúdo no próximo
   tique da entidade.
-- O ovo é um bloco comum e usa o modelo direto em `minecraft:geometry`. Se ele
-  aparecer invisível, é a mesma pedra no caminho que a Incubadora tropeçou, e a
-  saída é a mesma: passar o desenho pra uma entidade.
+- **Encostar a mira no bloco mostra o nome flutuando.** É o preço do apelido da
+  entidade, e o apelido é o que faz a tela da Incubadora abrir.
 
 ## O que foi gerado aqui, e não veio pronto
 
 | arquivo | como sai |
 |---|---|
-| `textures/ui/incubator_gui.png` | `tools/gen_ui_textures.py` |
 | `textures/ui/incubator_cell.png` | `tools/gen_ui_textures.py` |
 | `textures/blocks/incubator_unlit.png` | `tools/make_block_textures.py` (deriva da acesa) |
 | `models/blocks/incubator_item.geo.json` | `tools/fix_block_geo.py` (só o ícone do item) |
@@ -271,5 +268,6 @@ dois estão iguais. Trocar é sobrescrever esse arquivo, nada mais.
 | `tools/frames/fuel_2.png`, `tools/frames/arrow_1.png` | recorte dos quadros vizinhos |
 | `textures/blocks/skrill_egg_hatched.png` | cópia provisória do ovo não chocado |
 
-Todo o resto — modelo da Incubadora, textura da Incubadora, modelo do ovo,
-textura do ovo, quadros das barras — é arquivo do autor, copiado sem edição.
+Todo o resto — modelo da Incubadora, textura da Incubadora, fundo da tela,
+modelo do ovo, textura do ovo, quadros das barras — é arquivo do autor, copiado
+sem edição.

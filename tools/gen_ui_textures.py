@@ -2,14 +2,16 @@
 """Gera as texturas de UI da Incubadora a partir do mock-up de referencia.
 
   textures/ui/incubator_cell.png  celula de slot em nine-slice (18x18)
-  textures/ui/incubator_gui.png   fundo da tela (176x166)
+
+O fundo da tela (textures/ui/incubator_gui.png) NAO sai daqui: e arte do autor,
+copiada pro pacote sem edicao.
 
 A celula NAO e desenhada no fundo: ela e uma textura propria, aplicada pelo
 JSON UI em cada slot via $background_images. Assim as celulas caem sempre em
 cima dos slots de verdade, sem depender de eu acertar o pixel na arte.
 
 As medidas sao as do mock-up (284x266, que e uma tela de 176x166 renderizada
-em 1.611x). A paleta e amostrada das barras que vieram no pacote.
+em 1.611x). A paleta da celula e amostrada das barras que vieram no pacote.
 """
 import math, os, random, struct, zlib
 
@@ -79,54 +81,11 @@ def gen_cell():
 
 
 # ----------------------------------------------------------- fundo 176x166
-def gen_background():
-    """Painel liso, sem desenho nenhum atras dos slots.
-
-    A versao anterior tinha veios de lava inventados por mim correndo pela
-    tela; eles brigavam com as barras (que ja sao a lava de verdade) e sujavam
-    o fundo das celulas. Agora e so pedra escura com granulado leve, o friso
-    que separa a maquina do inventario e a moldura - quem da cor sao os
-    medidores e as celulas, desenhados por cima pelo JSON UI.
-    """
-    rnd = random.Random(20260908)
-    px = [[list(BG) + [255] for _ in range(W)] for _ in range(H)]
-
-    # manchas largas e suaves, pra pedra nao ficar chapada
-    for _ in range(40):
-        cx, cy = rnd.randrange(W), rnd.randrange(H)
-        r = rnd.randrange(10, 30)
-        tint = rnd.choice([(114, 46, 44), (88, 33, 33)])
-        for y in range(max(0, cy - r), min(H, cy + r)):
-            for x in range(max(0, cx - r), min(W, cx + r)):
-                d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
-                if d < r:
-                    put(px, x, y, tint, int(30 * (1 - d / r)))
-
-    for y in range(H):
-        for x in range(W):
-            n = rnd.randint(-3, 3)
-            for i in range(3):
-                px[y][x][i] = max(0, min(255, px[y][x][i] + n))
-
-    # friso entre a maquina e o inventario, logo acima da grade 9x3 (y = 86)
-    for x in range(6, W - 6):
-        put(px, x, 79, GROOVE)
-        put(px, x, 80, EDGE_LITE, 90)
-
-    # moldura: contorno escuro, bisel claro em cima/esquerda, escuro embaixo/direita
-    for x in range(W):
-        put(px, x, 0, EDGE_OUT); put(px, x, 1, EDGE_MID)
-        put(px, x, 2, EDGE_LITE); put(px, x, 3, EDGE_SOFT)
-        put(px, x, H - 1, EDGE_OUT); put(px, x, H - 2, EDGE_DARK)
-    for y in range(H):
-        put(px, 0, y, EDGE_OUT); put(px, 1, y, EDGE_MID)
-        put(px, 2, y, EDGE_LITE); put(px, 3, y, EDGE_SOFT)
-        put(px, W - 1, y, EDGE_OUT); put(px, W - 2, y, EDGE_DARK)
-
-    write_png(os.path.join(OUT, "incubator_gui.png"), W, H, px)
-
+# NAO e gerado aqui. textures/ui/incubator_gui.png e arte do autor, 176x166,
+# copiada pro pacote sem edicao. Trocar = sobrescrever o arquivo.
+# (Ja existiu um gerador de fundo neste script; saiu quando a arte de verdade
+#  chegou, pra ninguem apagar o arquivo bom rodando o script sem querer.)
 
 os.makedirs(OUT, exist_ok=True)
 gen_cell()
-gen_background()
 print("gerado:", sorted(f for f in os.listdir(OUT) if f.startswith("incubator_")))
