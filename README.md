@@ -121,16 +121,22 @@ montar o que falta recortando os vizinhos, sem inventar desenho:
 | `frames/fuel_2.png` | nível 2 (vieram 1, 3, 4, 5, 6) | topo do nível 1 + base do nível 3 |
 | `frames/arrow_1.png` | 1º estágio (vieram 10, 15, 20, 25 px de avanço) | 2º estágio recortado em x=5 |
 | `frames_ice/fuel_4.png` | nível 4 (vieram 0, 1, 2, 3, 5, 6) | topo do nível 3 + base do nível 5 |
-| `frames_ice/arrow_5.png` | último estágio | ver abaixo |
 
-O último estágio da setinha de gelo é o único que não tinha vizinho pra recortar
-— era o fim da série. Só que **a setinha de gelo é a de lava repintada**: as
-máscaras de preenchimento batem pixel a pixel nos cinco estágios que vieram. Daí
-a faixa que faltava (38 px) saiu da máscara da setinha de lava, e a cor saiu da
-própria rampa de gelo continuada pelo passo dela:
-`(44,82,202) + ((44,82,202) − (37,72,180)) = (51,92,224)`. É o único pixel deste
-add-on cuja cor eu calculei em vez de copiar — mandando o quadro de verdade, é
-sobrescrever `tools/frames_ice/arrow_5.png` e rodar o instalador.
+O último estágio da setinha de gelo também chegou a ser montado aqui, mas o
+quadro de verdade veio depois e substituiu o meu — e ainda bem, porque o meu
+estava errado. Eu tinha assumido que a setinha de gelo era a de lava repintada
+(as máscaras batem pixel a pixel nos cinco primeiros estágios) e copiado a
+máscara da de lava. O quadro real **preenche também a ponta da seta**: 148 px
+contra os 118 da de lava.
+
+### A setinha de lava para antes da ponta
+
+Efeito colateral disso: a 100% de progresso, a setinha de gelo fica cheia até a
+ponta e a de lava para no fim da haste, com a cabeça ainda vazia. As duas séries
+têm 6 estágios; o que falta é um quadro final da de lava com a ponta preenchida,
+como o da de gelo. Não montei esse quadro porque as cores da ponta não existem
+em nenhum quadro de lava que eu tenha — mandando ele, é jogar em
+`tools/frames/` e rodar o instalador.
 
 ### Ordem dos slots
 
