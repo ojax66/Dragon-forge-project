@@ -1,0 +1,30 @@
+{
+	"format_version": "1.20.10",
+	"minecraft:recipe_shaped": {
+		"description": {
+			"identifier": "sallytek:catalyst"
+		},
+		"tags": [
+			"crafting_table"
+		],
+		"pattern": [
+			"GNG",
+			"NDN",
+			"GNG"
+		],
+		"key": {
+			"G": {
+				"item": "minecraft:gold_ingot"
+			},
+			"N": {
+				"item": "minecraft:gold_nugget"
+			},
+			"D": {
+				"item": "minecraft:diamond"
+			}
+		},
+		"result": {
+			"item": "sallytek:catalyst"
+		}
+	}
+}

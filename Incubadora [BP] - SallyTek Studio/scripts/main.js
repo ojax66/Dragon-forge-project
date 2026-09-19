@@ -1,5 +1,8 @@
 import { world, system, ItemStack } from "@minecraft/server";
 
+// Altares, catalisador e o ritual da ametista moram noutro arquivo.
+import "./altars.js";
+
 // Aparece no Content Log ao entrar no mundo. Se esta linha nao aparecer, o
 // modulo de script nao carregou e o problema e o manifest, nao o addon.
 console.warn("[Incubadora] script carregado - @minecraft/server 2.9.0");

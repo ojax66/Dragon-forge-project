@@ -259,6 +259,93 @@ mais custou pra ficar de pé. Os arquivos da de lava não foram tocados — a de
 gelo só **acrescenta** entradas em `incubator_common.json`, `chest_screen.json`
 e `_ui_defs.json`.
 
+## Altares e catalisador
+
+Um segundo sistema, separado das Incubadoras: `scripts/altars.js`.
+
+| bloco / item | o que é |
+|---|---|
+| `sallytek:main_altar` | altar principal, fica no meio |
+| `sallytek:secondary_altar` | altar secundário, 12 em volta |
+| `sallytek:catalyst` | catalisador vazio (cristal branco) |
+| `sallytek:catalyst_charged` | catalisador carregado (cristal roxo) |
+| `sallytek:base_crystal` | o que a ametista vira depois de dar a magia |
+
+### Receita do catalisador
+
+Diamante no meio, pepita de ouro em cima, embaixo e dos lados dele, ouro nas
+quatro pontas:
+
+```
+ouro    pepita   ouro
+pepita  diamante pepita
+ouro    pepita   ouro
+```
+
+### O desenho do ritual
+
+"Pular 2 blocos e ir circulando, com espaços de 1 bloco entre os altares
+secundários" dá **um anel na distância 3** (os blocos 1 e 2 ficam vazios) com
+**um altar sim, um não** — 12 altares, cada um a 2 blocos do vizinho, ou seja 1
+bloco de folga:
+
+```
+S . S . S . S
+. . . . . . .
+S . . . . . S
+. . . P . . .        P = altar principal
+S . . . . . S        S = altar secundário
+. . . . . . .
+S . S . S . S
+```
+
+Esse desenho não está escrito à mão no código: `RING` sai de um laço
+(`max(|dx|,|dz|) == 3` e `dx+dz` par), e a capacidade do catalisador é
+`RING.length`. Mudou o anel, a capacidade acompanha sozinha.
+
+### A absorção
+
+Uma ametista por segundo, enquanto houver:
+
+1. O catalisador **vazio** vai no altar principal, uma `minecraft:amethyst_shard`
+   em cada altar secundário.
+2. A cada segundo o altar principal puxa a magia de uma ametista: a carga sobe
+   **100/12 = 8,33%** e aquela ametista vira um **cristal base**, que fica
+   flutuando no altar dela.
+3. Com as 12 absorvidas (**100%**), o catalisador do meio vira o carregado.
+
+Clicar no altar principal de mão vazia, sem nada em cima, mostra a carga na
+barra de ação.
+
+### Como o item fica flutuando
+
+O que guarda o item é uma entidade invisível dentro do bloco
+(`sallytek:altar_core`), com um contêiner de 1 slot — por isso nada se perde ao
+sair do mundo. O contêiner é `private`, então clicar nele nunca abre tela de baú.
+
+O que flutua em cima é só aparência: **um item dropado de verdade**, com o
+"pegar" cancelado por `world.beforeEvents.entityItemPickup`. Item dropado já
+flutua e gira sozinho, que é exatamente o efeito pedido, e funciona com qualquer
+item sem precisar de modelo. Como drop some em 5 minutos, o núcleo troca o
+enfeite aos 4 — o item de verdade está no contêiner, então a troca não perde
+nada.
+
+O catalisador é a exceção: ele tem modelo e animação próprios (os anéis giram
+cada um pro seu lado, `animation.catalyst.float`), então em cima do altar ele
+vira a entidade `sallytek:catalyst_display`.
+
+### Por que o catalisador é bloco e não item
+
+Item do Bedrock não tem modelo 3D, só ícone 2D — e ícone de catalisador não
+veio. Sendo bloco, o ícone do inventário é o próprio modelo renderizado. O preço
+é que dá pra colocar ele no chão como bloco; parado, sem os anéis girando.
+
+Para isso `tools/make_altar_geo.py` gera `geometry.catalyst_item`: os mesmos 40
+cubos num osso só. Geometria de bloco não aceita osso com `parent`, e o
+catalisador tem três — mas nenhum deles gira sozinho (a hierarquia só existe pra
+animação mexer em cada anel), então juntar tudo num osso dá exatamente o mesmo
+desenho parado.
+
 ## Sobre o nome do bloco
 
 O **rótulo de título saiu da tela** (não existe `title_label` em
@@ -342,7 +429,11 @@ dois estão iguais. Trocar é sobrescrever esse arquivo, nada mais.
 | `tools/frames/fuel_2.png`, `tools/frames/arrow_1.png` | recorte dos quadros vizinhos |
 | `textures/blocks/skrill_egg_hatched.png` | cópia provisória do ovo não chocado |
 
+| `models/blocks/catalyst_item.geo.json` | `tools/make_altar_geo.py` (os mesmos cubos, num osso só) |
+
 Todo o resto — modelos e texturas das duas Incubadoras, os dois fundos de tela,
-modelo e textura do ovo, quadros das barras — é arquivo do autor, copiado sem
-edição. A Incubadora de Gelo nem precisou da derivação da textura apagada: as
+modelo e textura do ovo, modelos e texturas dos altares e do catalisador,
+quadros das barras — é arquivo do autor, copiado sem edição. Nos três modelos
+novos a única coisa mudada foi o identificador: os três saíram do Blockbench
+como `geometry.unknown` e um sobrescreveria o outro. A Incubadora de Gelo nem precisou da derivação da textura apagada: as
 duas versões (com e sem água) vieram prontas.

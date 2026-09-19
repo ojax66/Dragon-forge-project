@@ -52,9 +52,15 @@ MACHINES = {
 
 LANG = {
     "en_US.lang": {"fuel": "Lava", "fuel_gelo": "Water", "arrow": "Progress",
-                   "egg": "Skrill Egg", "egg_hatched": "Hatched Skrill Egg"},
+                   "egg": "Skrill Egg", "egg_hatched": "Hatched Skrill Egg",
+                   "main_altar": "Main Altar", "secondary_altar": "Secondary Altar",
+                   "catalyst": "Empty Catalyst", "catalyst_charged": "Charged Catalyst",
+                   "base_crystal": "Base Crystal"},
     "pt_BR.lang": {"fuel": "Lava", "fuel_gelo": "Agua", "arrow": "Progresso",
-                   "egg": "Ovo de Skrill", "egg_hatched": "Ovo de Skrill Chocado"},
+                   "egg": "Ovo de Skrill", "egg_hatched": "Ovo de Skrill Chocado",
+                   "main_altar": "Altar Principal", "secondary_altar": "Altar Secundario",
+                   "catalyst": "Catalisador Vazio", "catalyst_charged": "Catalisador Carregado",
+                   "base_crystal": "Cristal Base"},
 }
 
 # is_fill vira o teste da maquina que esta sendo instalada no momento
@@ -258,6 +264,11 @@ def regenerate():
             f"tile.sallytek:ice_incubator.name={MACHINES['gelo']['tile'][fn]}",
             f"tile.sallytek:skrill_egg.name={t['egg']}",
             f"tile.sallytek:skrill_egg_hatched.name={t['egg_hatched']}",
+            f"tile.sallytek:main_altar.name={t['main_altar']}",
+            f"tile.sallytek:secondary_altar.name={t['secondary_altar']}",
+            f"tile.sallytek:catalyst.name={t['catalyst']}",
+            f"tile.sallytek:catalyst_charged.name={t['catalyst_charged']}",
+            f"item.sallytek:base_crystal={t['base_crystal']}",
             "",
             "## titulo do container (apelido da entidade invisivel)",
             f"sallytek.incubator.block={MACHINES['lava']['tile'][fn]}",

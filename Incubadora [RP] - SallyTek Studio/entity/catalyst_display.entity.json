@@ -1,0 +1,29 @@
+{
+	"format_version": "1.10.0",
+	"minecraft:client_entity": {
+		"description": {
+			"identifier": "sallytek:catalyst_display",
+			"materials": {
+				"default": "entity_alphatest"
+			},
+			"textures": {
+				"empty": "textures/blocks/catalyst",
+				"charged": "textures/blocks/catalyst_charged"
+			},
+			"geometry": {
+				"default": "geometry.catalyst"
+			},
+			"animations": {
+				"float": "animation.catalyst.float"
+			},
+			"scripts": {
+				"animate": [
+					"float"
+				]
+			},
+			"render_controllers": [
+				"controller.render.catalyst"
+			]
+		}
+	}
+}

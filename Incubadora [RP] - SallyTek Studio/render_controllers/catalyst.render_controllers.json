@@ -1,0 +1,35 @@
+{
+	"format_version": "1.10.0",
+	"render_controllers": {
+		"controller.render.catalyst": {
+			"geometry": "Geometry.default",
+			"materials": [
+				{
+					"*": "Material.default"
+				}
+			],
+			"textures": [
+				"Array.skins[query.property('sallytek:charged')]"
+			],
+			"arrays": {
+				"textures": {
+					"Array.skins": [
+						"Texture.empty",
+						"Texture.charged"
+					]
+				}
+			}
+		},
+		"controller.render.plain": {
+			"geometry": "Geometry.default",
+			"materials": [
+				{
+					"*": "Material.default"
+				}
+			],
+			"textures": [
+				"Texture.default"
+			]
+		}
+	}
+}

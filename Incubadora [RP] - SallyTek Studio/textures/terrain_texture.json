@@ -21,6 +21,18 @@
 		},
 		"ice_incubator_unlit": {
 			"textures": "textures/blocks/ice_incubator_unlit"
+		},
+		"main_altar": {
+			"textures": "textures/blocks/main_altar"
+		},
+		"secondary_altar": {
+			"textures": "textures/blocks/secondary_altar"
+		},
+		"catalyst": {
+			"textures": "textures/blocks/catalyst"
+		},
+		"catalyst_charged": {
+			"textures": "textures/blocks/catalyst_charged"
 		}
 	}
 }
