@@ -1,0 +1,20 @@
+{
+	"format_version": "1.20.80",
+	"minecraft:item": {
+		"description": {
+			"identifier": "sallytek:ice_incubator_fuel_1",
+			"menu_category": {
+				"category": "none",
+				"is_hidden_in_commands": true
+			}
+		},
+		"components": {
+			"minecraft:icon": {
+				"textures": {
+					"default": "sallytek:ice_incubator_fuel_1"
+				}
+			},
+			"minecraft:max_stack_size": 1
+		}
+	}
+}

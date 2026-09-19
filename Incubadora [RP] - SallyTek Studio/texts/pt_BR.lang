@@ -1,15 +1,11 @@
 tile.sallytek:incubator.name=Incubadora
+tile.sallytek:ice_incubator.name=Incubadora de Gelo
 tile.sallytek:skrill_egg.name=Ovo de Skrill
 tile.sallytek:skrill_egg_hatched.name=Ovo de Skrill Chocado
 
-## A entidade do container nao leva mais nameTag - assim o bloco nao
-## mostra nome nenhum no mundo. Estas duas chaves so existem porque o
-## titulo do container pode cair em qualquer uma das duas, dependendo
-## de como o jogo resolve o nome de uma entidade sem apelido; ui/
-## chest_screen.json compara as duas. A terceira e o nome antigo, pras
-## incubadoras que ja estavam colocadas antes desta versao.
-entity.sallytek:incubator.name=Incubadora
+## titulo do container (apelido da entidade invisivel)
 sallytek.incubator.block=Incubadora
+sallytek.ice_incubator.block=Incubadora de Gelo
 
 ## itens-display das barras
 item.sallytek:incubator_fuel_0=Lava
@@ -25,3 +21,16 @@ item.sallytek:incubator_arrow_2=Progresso
 item.sallytek:incubator_arrow_3=Progresso
 item.sallytek:incubator_arrow_4=Progresso
 item.sallytek:incubator_arrow_5=Progresso
+item.sallytek:ice_incubator_fuel_0=Agua
+item.sallytek:ice_incubator_fuel_1=Agua
+item.sallytek:ice_incubator_fuel_2=Agua
+item.sallytek:ice_incubator_fuel_3=Agua
+item.sallytek:ice_incubator_fuel_4=Agua
+item.sallytek:ice_incubator_fuel_5=Agua
+item.sallytek:ice_incubator_fuel_6=Agua
+item.sallytek:ice_incubator_arrow_0=Progresso
+item.sallytek:ice_incubator_arrow_1=Progresso
+item.sallytek:ice_incubator_arrow_2=Progresso
+item.sallytek:ice_incubator_arrow_3=Progresso
+item.sallytek:ice_incubator_arrow_4=Progresso
+item.sallytek:ice_incubator_arrow_5=Progresso

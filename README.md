@@ -1,18 +1,51 @@
 # Incubadora Funcional — SallyTek Studio / Dragon Forge
 
-Add-on de Minecraft Bedrock com o bloco `sallytek:incubator`, que funciona como
-uma fornalha: você põe um item pra chocar, abastece com balde de lava e o
-progresso corre até sair o resultado.
+Add-on de Minecraft Bedrock com duas máquinas que funcionam como fornalha: você
+põe um item pra chocar, abastece com balde e o progresso corre até sair o
+resultado.
+
+| máquina | bloco | abastece com |
+|---|---|---|
+| Incubadora | `sallytek:incubator` | balde de lava |
+| Incubadora de Gelo | `sallytek:ice_incubator` | balde de água |
+
+As duas são o mesmo mecanismo: mesma tela, mesmos cinco slots, mesmo
+balanceamento (1 balde = 1 ponto, tanque de 6, 60s por item). O que muda é
+modelo, textura, arte da tela e o balde que elas aceitam.
 
 ```
 Incubadora [BP] - SallyTek Studio/   behavior pack (blocos + script)
 Incubadora [RP] - SallyTek Studio/   resource pack (modelos, texturas e UI)
 tools/                               scripts que geram/instalam os assets
-tools/frames/                        os quadros das barras, como vieram
+tools/frames/                        quadros das barras da de lava
+tools/frames_ice/                    quadros das barras da de gelo
 ```
 
-Blocos: `sallytek:incubator`, `sallytek:skrill_egg` e
+Blocos: `sallytek:incubator`, `sallytek:ice_incubator`, `sallytek:skrill_egg` e
 `sallytek:skrill_egg_hatched`.
+
+## As duas máquinas moram numa tabela
+
+`scripts/main.js` não tem código duplicado: o que muda entre lava e gelo está
+todo na tabela `MACHINES` do topo do arquivo, e o resto do script não sabe qual
+é qual. Cada entrada traz o bloco, a entidade, o apelido do contêiner, o balde
+aceito, o prefixo das barras e as contagens de quadros.
+
+```js
+{
+	nome: "gelo",
+	blockId: "sallytek:ice_incubator",
+	entityId: "sallytek:ice_incubator",
+	containerName: "sallytek.ice_incubator.block",
+	fuelItem: "minecraft:water_bucket",
+	gaugePrefix: "sallytek:ice_incubator_",
+	...
+}
+```
+
+Terceira máquina = mais uma linha aí, mais os arquivos de bloco/entidade/tela.
+As duas entidades batem o **mesmo** evento de relógio
+(`sallytek:incubator_tick`); quem é quem sai do `typeId` da entidade.
 
 ## Como a interface foi feita
 
@@ -58,30 +91,46 @@ resultado é uma barra que anima.
 **Trocar ou acrescentar quadros:** jogue todos os PNGs numa pasta e rode
 
 ```sh
-python3 tools/install_gauge_textures.py <pasta>
+python3 tools/install_gauge_textures.py                  # reinstala as duas
+python3 tools/install_gauge_textures.py <pasta> gelo     # troca só a de gelo
 ```
 
 Ele separa as séries pelo tamanho (32x32 = setinha, 72x266 = abastecimento),
-ordena cada uma pela quantidade de pixel laranja — do vazio pro cheio —, grava
-numerado, e regenera o que depende da contagem: os itens-display, o
-`item_texture.json`, os `.lang` e as constantes `ARROW_STAGES` e `FUEL_POINTS`
-do `scripts/main.js`. Se a série não tiver um quadro vazio, ele gera um tirando
-o preenchimento do menor quadro.
+ordena cada uma pela quantidade de pixel preenchido — do vazio pro cheio —,
+grava numerado, e regenera o que depende da contagem: os itens-display, o
+`item_texture.json`, os `.lang` e os `arrowStages`/`fuelPoints` da tabela
+`MACHINES`. Se a série não tiver um quadro vazio, ele gera um tirando o
+preenchimento do menor quadro. O teste de "preenchido" é por máquina: laranja
+de lava numa, azul de água na outra.
 
-Os quadros ficam versionados em `tools/frames/`, entao dá pra rodar de novo a
-qualquer momento sem depender do chat.
+Os quadros ficam versionados em `tools/frames/` e `tools/frames_ice/`, então dá
+pra rodar de novo a qualquer momento sem depender do chat.
 
-Hoje: **6 quadros de setinha** e **7 de abastecimento** — ou seja, o tanque
-guarda **6 baldes**, e cada balde continua valendo **1 ponto**.
+Hoje, nas duas máquinas: **6 quadros de setinha** e **7 de abastecimento** — ou
+seja, tanque de **6 baldes**, cada balde valendo **1 ponto**.
 
-**Dois quadros foram montados aqui, não vieram no lote.** As duas séries são
-espaçadas por igual e faltava um degrau em cada uma: o nível 2 do tanque (a
-lava sobe 43px por marca, e vieram 1, 3, 4, 5 e 6) e o estágio 1 da setinha (o
-preenchimento anda 5px por quadro, e vieram 10, 15, 20 e 25). Como os quadros
-de cada série são idênticos abaixo da linha de preenchimento — conferido pixel
-a pixel —, dá pra montar o que falta recortando os que vieram, sem inventar
-desenho: é o que `tools/frames/fuel_2.png` e `tools/frames/arrow_1.png` são.
-Mandando os originais, é só sobrescrever os dois arquivos e rodar o instalador.
+### Quatro quadros foram montados aqui
+
+Os dois lotes chegaram com exatamente um degrau faltando em cada série. Como as
+séries são espaçadas por igual e cada quadro é **idêntico ao anterior abaixo da
+linha de preenchimento** — conferido pixel a pixel, 0 de diferença —, dá pra
+montar o que falta recortando os vizinhos, sem inventar desenho:
+
+| arquivo | o que faltava | como saiu |
+|---|---|---|
+| `frames/fuel_2.png` | nível 2 (vieram 1, 3, 4, 5, 6) | topo do nível 1 + base do nível 3 |
+| `frames/arrow_1.png` | 1º estágio (vieram 10, 15, 20, 25 px de avanço) | 2º estágio recortado em x=5 |
+| `frames_ice/fuel_4.png` | nível 4 (vieram 0, 1, 2, 3, 5, 6) | topo do nível 3 + base do nível 5 |
+| `frames_ice/arrow_5.png` | último estágio | ver abaixo |
+
+O último estágio da setinha de gelo é o único que não tinha vizinho pra recortar
+— era o fim da série. Só que **a setinha de gelo é a de lava repintada**: as
+máscaras de preenchimento batem pixel a pixel nos cinco estágios que vieram. Daí
+a faixa que faltava (38 px) saiu da máscara da setinha de lava, e a cor saiu da
+própria rampa de gelo continuada pelo passo dela:
+`(44,82,202) + ((44,82,202) − (37,72,180)) = (51,92,224)`. É o único pixel deste
+add-on cuja cor eu calculei em vez de copiar — mandando o quadro de verdade, é
+sobrescrever `tools/frames_ice/arrow_5.png` e rodar o instalador.
 
 ### Ordem dos slots
 
@@ -129,14 +178,19 @@ célula assada no fundo: quem desenha é o próprio JSON UI, em cima do slot de
 verdade, então nunca sai do lugar. O mesmo arquivo estica pro tanque (18×61) e
 pra saída (26×26).
 
-O fundo (`textures/ui/incubator_gui.png`) é **arte do autor**, 176x166,
-copiada pro pacote sem edição — ninguém gera esse arquivo. `gen_ui_textures.py`
-só faz a célula; ele já teve um gerador de fundo, que saiu justamente pra
-ninguém apagar a arte boa rodando o script sem querer.
+Cada máquina tem a sua: `incubator_cell` (vermelha) e `ice_incubator_cell`
+(azul). A de gelo veio desenhada em **72x72** — e não é um 18x18 escalado
+(nenhum bloco de 2, 3, 4, 6 ou 8 px é de cor única), então ela é redesenhada em
+18x18 com as cores amostradas dela: interior `#37848C`, contorno `#106169`,
+brilho `#3EB7C4`. Redesenhar em vez de reduzir mantém o nine-slice de 1px
+certinho, que é o que faz a mesma textura servir pro slot de 18x18, pra saída de
+26x26 e pro tanque de 18x61.
 
-A paleta da célula é amostrada das barras que vieram no pacote: o interior
-`#501B1B` é exatamente a cor do corpo do tanque, e `#411616` / `#883D3D` são a
-sombra e o brilho.
+Os fundos (`textures/ui/incubator_gui.png` e `ice_incubator_gui.png`) são **arte
+do autor**, 176x166, copiados pro pacote sem edição — ninguém gera esses
+arquivos. `gen_ui_textures.py` só faz as células; ele já teve um gerador de
+fundo, que saiu justamente pra ninguém apagar a arte boa rodando o script sem
+querer.
 
 ### Quem desenha o modelo é a entidade
 
@@ -188,6 +242,16 @@ python3 tools/make_block_textures.py <incubadora_com_lava.png>
 
 que grava `incubator_lit.png` como cópia literal do arquivo e deriva
 `incubator_unlit.png`. `--conferir` refaz a conta em cima do par instalado.
+
+## A tela de gelo é separada de propósito
+
+`chest.ice_incubator_panel` e `ui/ice_incubator_screen.json` são cópias das de
+lava com o fundo e a célula trocados, em vez de um template com variáveis. É
+duplicação consciente: o painel de lava é o único caminho comprovado até a tela
+abrir, e transformar ele em template agora seria mexer justamente na parte que
+mais custou pra ficar de pé. Os arquivos da de lava não foram tocados — a de
+gelo só **acrescenta** entradas em `incubator_common.json`, `chest_screen.json`
+e `_ui_defs.json`.
 
 ## Sobre o nome do bloco
 
@@ -261,6 +325,10 @@ dois estão iguais. Trocar é sobrescrever esse arquivo, nada mais.
 | arquivo | como sai |
 |---|---|
 | `textures/ui/incubator_cell.png` | `tools/gen_ui_textures.py` |
+| `textures/ui/ice_incubator_cell.png` | `tools/gen_ui_textures.py`, com as cores da arte 72x72 |
+| `models/blocks/ice_incubator_item.geo.json` | mesmo corte de `fix_block_geo.py` (só o ícone) |
+| `tools/frames_ice/fuel_4.png` | recorte dos quadros vizinhos |
+| `tools/frames_ice/arrow_5.png` | máscara da setinha de lava + cor extrapolada |
 | `textures/blocks/incubator_unlit.png` | `tools/make_block_textures.py` (deriva da acesa) |
 | `models/blocks/incubator_item.geo.json` | `tools/fix_block_geo.py` (só o ícone do item) |
 | `models/blocks/incubator_empty.geo.json` | `tools/fix_block_geo.py` |
@@ -268,6 +336,7 @@ dois estão iguais. Trocar é sobrescrever esse arquivo, nada mais.
 | `tools/frames/fuel_2.png`, `tools/frames/arrow_1.png` | recorte dos quadros vizinhos |
 | `textures/blocks/skrill_egg_hatched.png` | cópia provisória do ovo não chocado |
 
-Todo o resto — modelo da Incubadora, textura da Incubadora, fundo da tela,
-modelo do ovo, textura do ovo, quadros das barras — é arquivo do autor, copiado
-sem edição.
+Todo o resto — modelos e texturas das duas Incubadoras, os dois fundos de tela,
+modelo e textura do ovo, quadros das barras — é arquivo do autor, copiado sem
+edição. A Incubadora de Gelo nem precisou da derivação da textura apagada: as
+duas versões (com e sem água) vieram prontas.

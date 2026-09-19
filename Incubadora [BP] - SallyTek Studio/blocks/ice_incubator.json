@@ -1,0 +1,70 @@
+{
+	"format_version": "1.21.50",
+	"minecraft:block": {
+		"description": {
+			"identifier": "sallytek:ice_incubator",
+			"menu_category": {
+				"category": "construction"
+			},
+			"states": {
+				"sallytek:lit": [
+					false,
+					true
+				],
+				"sallytek:placed": [
+					false,
+					true
+				]
+			}
+		},
+		"components": {
+			"minecraft:geometry": "geometry.ice_incubator_item",
+			"minecraft:material_instances": {
+				"*": {
+					"texture": "ice_incubator_unlit",
+					"render_method": "alpha_test"
+				}
+			},
+			"minecraft:collision_box": {
+				"origin": [
+					-8,
+					0,
+					-8
+				],
+				"size": [
+					16,
+					16,
+					16
+				]
+			},
+			"minecraft:selection_box": {
+				"origin": [
+					-8,
+					0,
+					-8
+				],
+				"size": [
+					16,
+					16,
+					16
+				]
+			},
+			"minecraft:destructible_by_mining": {
+				"seconds_to_destroy": 3.5
+			},
+			"minecraft:destructible_by_explosion": {
+				"explosion_resistance": 6
+			},
+			"minecraft:light_emission": 0,
+			"minecraft:map_color": "#2d7f88"
+		},
+		"permutations": [
+			{
+				"condition": "q.block_state('sallytek:placed') == true",
+				"components": {
+					"minecraft:geometry": "geometry.incubator_empty"
+				}
+			}
+		]
+	}
+}

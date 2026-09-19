@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Gera as texturas de UI da Incubadora a partir do mock-up de referencia.
 
-  textures/ui/incubator_cell.png  celula de slot em nine-slice (18x18)
+  textures/ui/incubator_cell.png      celula de slot da de lava (18x18)
+  textures/ui/ice_incubator_cell.png  celula de slot da de gelo (18x18)
 
 O fundo da tela (textures/ui/incubator_gui.png) NAO sai daqui: e arte do autor,
 copiada pro pacote sem edicao.
@@ -35,6 +36,15 @@ EDGE_SOFT = (116, 51, 51)
 EDGE_DARK = (49, 16, 16)     # bisel escuro (baixo/direita)
 GROOVE    = (64, 21, 21)     # friso que separa a maquina do inventario
 
+# ---- paleta da celula de gelo ---------------------------------------------
+# Amostrada da celula que o autor mandou desenhada em 72x72 (nao e um 18x18
+# escalado - nenhum bloco de 2, 3, 4, 6 ou 8 px e de cor unica -, entao a
+# celula de verdade e redesenhada aqui em 18x18 com as cores dela, o que
+# mantem o nine-slice de 1px certinho.)
+ICE_IN    = (55, 132, 140)   # interior
+ICE_SHAD  = (16, 97, 105)    # contorno escuro (cima/esquerda)
+ICE_LITE  = (62, 183, 196)   # brilho (baixo/direita)
+
 # Nicho do tanque: e a mesma celula esticada pelo JSON UI, entao aqui so
 # ficam registradas as medidas pra quem for conferir com o mock-up.
 #   tanque  (7, 16) 18x61      balde  (31, 57) 18x18
@@ -67,16 +77,16 @@ def put(px, x, y, c, a=255):
 
 
 # ------------------------------------------------------------- celula 18x18
-def gen_cell():
-    px = [[list(CELL_IN) + [255] for _ in range(CELL)] for _ in range(CELL)]
+def gen_cell(nome, dentro, sombra, brilho):
+    px = [[list(dentro) + [255] for _ in range(CELL)] for _ in range(CELL)]
     for i in range(CELL):
-        put(px, i, 0, CELL_SHAD)              # topo
-        put(px, 0, i, CELL_SHAD)              # esquerda
-        put(px, i, CELL - 1, CELL_LITE)       # baixo
-        put(px, CELL - 1, i, CELL_LITE)       # direita
-    write_png(os.path.join(OUT, "incubator_cell.png"), CELL, CELL, px)
+        put(px, i, 0, sombra)                 # topo
+        put(px, 0, i, sombra)                 # esquerda
+        put(px, i, CELL - 1, brilho)          # baixo
+        put(px, CELL - 1, i, brilho)          # direita
+    write_png(os.path.join(OUT, nome + ".png"), CELL, CELL, px)
     # nine-slice de 1px: a celula estica pro tanque (18x61) e pra saida (26x26)
-    with open(os.path.join(OUT, "incubator_cell.json"), "w") as f:
+    with open(os.path.join(OUT, nome + ".json"), "w") as f:
         f.write('{\n  "nineslice_size": 1,\n  "base_size": [ 18, 18 ]\n}\n')
 
 
@@ -87,5 +97,6 @@ def gen_cell():
 #  chegou, pra ninguem apagar o arquivo bom rodando o script sem querer.)
 
 os.makedirs(OUT, exist_ok=True)
-gen_cell()
-print("gerado:", sorted(f for f in os.listdir(OUT) if f.startswith("incubator_")))
+gen_cell("incubator_cell", CELL_IN, CELL_SHAD, CELL_LITE)
+gen_cell("ice_incubator_cell", ICE_IN, ICE_SHAD, ICE_LITE)
+print("gerado:", sorted(f for f in os.listdir(OUT) if "incubator_" in f))

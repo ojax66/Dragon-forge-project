@@ -1,0 +1,90 @@
+{
+  "namespace": "ice_incubator_ui",
+
+  // Mesmas posicoes da tela de lava (ui/incubator_screen.json) - as duas
+  // maquinas tem exatamente o mesmo layout. So muda a celula dos slots.
+  // Tambem nao tem rotulo de titulo aqui.
+
+  "inventory_label": {
+    "type": "label",
+    "offset": [ -11, 72 ],
+    "anchor_from": "top_right",
+    "anchor_to": "top_right",
+    "text": "container.inventory",
+    "color": "$title_text_color",
+    "layer": 4
+  },
+
+  // Indices: 0 tanque | 1 balde | 2 entrada | 3 setinha | 4 saida
+  //          — mesma ordem usada em scripts/main.js.
+  // offset_x = x_desejado - (indice * 18)
+  "slots_grid": {
+    "type": "grid",
+    "size": [ 90, 18 ],
+    "offset": [ 0, 0 ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "grid_dimensions": [ 5, 1 ],
+    "collection_name": "container_items",
+    "grid_item_template": "incubator_common.slot_ice",
+    "controls": [
+      {
+        "fuel_gauge": {
+          "type": "panel",
+          "grid_position": [ 0, 0 ],
+          "controls": [
+            { "slot@incubator_common.gauge_fuel_ice": { "offset": [ 7, 16 ], "layer": 0 } }
+          ]
+        }
+      },
+      {
+        "fuel_slot": {
+          "type": "panel",
+          "grid_position": [ 1, 0 ],
+          "controls": [
+            { "slot@incubator_common.slot_ice": { "offset": [ 13, 57 ], "layer": 0 } }
+          ]
+        }
+      },
+      {
+        "input_slot": {
+          "type": "panel",
+          "grid_position": [ 2, 0 ],
+          "controls": [
+            { "slot@incubator_common.slot_ice": { "offset": [ 38, 36 ], "layer": 0 } }
+          ]
+        }
+      },
+      {
+        "progress_gauge": {
+          "type": "panel",
+          "grid_position": [ 3, 0 ],
+          "controls": [
+            { "slot@incubator_common.gauge_arrow_ice": { "offset": [ 41, 33 ], "layer": 0 } }
+          ]
+        }
+      },
+      {
+        "output_slot": {
+          "type": "panel",
+          "grid_position": [ 4, 0 ],
+          "controls": [
+            { "slot@incubator_common.slot_big_ice": { "offset": [ 52, 33 ], "layer": 0 } }
+          ]
+        }
+      }
+    ]
+  },
+
+  "top_half": {
+    "type": "panel",
+    "size": [ 176, 166 ],
+    "offset": [ 0, 0 ],
+    "anchor_from": "center",
+    "anchor_to": "center",
+    "controls": [
+      { "inventory@ice_incubator_ui.inventory_label": {} },
+      { "slots@ice_incubator_ui.slots_grid": {} }
+    ]
+  }
+}

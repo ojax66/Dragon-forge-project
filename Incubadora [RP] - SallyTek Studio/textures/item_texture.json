@@ -40,6 +40,45 @@
 		},
 		"sallytek:incubator_arrow_5": {
 			"textures": "textures/items/incubator_arrow_5"
+		},
+		"sallytek:ice_incubator_fuel_0": {
+			"textures": "textures/items/ice_incubator_fuel_0"
+		},
+		"sallytek:ice_incubator_fuel_1": {
+			"textures": "textures/items/ice_incubator_fuel_1"
+		},
+		"sallytek:ice_incubator_fuel_2": {
+			"textures": "textures/items/ice_incubator_fuel_2"
+		},
+		"sallytek:ice_incubator_fuel_3": {
+			"textures": "textures/items/ice_incubator_fuel_3"
+		},
+		"sallytek:ice_incubator_fuel_4": {
+			"textures": "textures/items/ice_incubator_fuel_4"
+		},
+		"sallytek:ice_incubator_fuel_5": {
+			"textures": "textures/items/ice_incubator_fuel_5"
+		},
+		"sallytek:ice_incubator_fuel_6": {
+			"textures": "textures/items/ice_incubator_fuel_6"
+		},
+		"sallytek:ice_incubator_arrow_0": {
+			"textures": "textures/items/ice_incubator_arrow_0"
+		},
+		"sallytek:ice_incubator_arrow_1": {
+			"textures": "textures/items/ice_incubator_arrow_1"
+		},
+		"sallytek:ice_incubator_arrow_2": {
+			"textures": "textures/items/ice_incubator_arrow_2"
+		},
+		"sallytek:ice_incubator_arrow_3": {
+			"textures": "textures/items/ice_incubator_arrow_3"
+		},
+		"sallytek:ice_incubator_arrow_4": {
+			"textures": "textures/items/ice_incubator_arrow_4"
+		},
+		"sallytek:ice_incubator_arrow_5": {
+			"textures": "textures/items/ice_incubator_arrow_5"
 		}
 	}
 }

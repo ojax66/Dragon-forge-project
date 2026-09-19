@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Instala as texturas das barras (abastecimento e setinha) no resource pack.
 
-Uso:  python3 tools/install_gauge_textures.py <pasta-com-os-pngs>
+Uso:  python3 tools/install_gauge_textures.py                 # as duas maquinas
+      python3 tools/install_gauge_textures.py <pasta> <lava|gelo>
+
+Sem argumento ele reinstala as duas a partir das pastas versionadas
+(tools/frames e tools/frames_ice). Com argumento, troca os quadros de uma
+maquina so pelos de <pasta>.
 
 Classifica os PNGs pelo tamanho, ordena cada serie pela quantidade de pixel
-laranja (do vazio pro cheio) e grava com nome numerado. Depois regenera tudo
-que depende da contagem de quadros: os itens-display do behavior pack, o
-item_texture.json, as linhas de idioma e as constantes do scripts/main.js.
+preenchido (do vazio pro cheio) e grava com nome numerado. Depois regenera
+tudo que depende da contagem de quadros: os itens-display do behavior pack, o
+item_texture.json, as linhas de idioma e as contagens da tabela MACHINES do
+scripts/main.js.
 
 Mandou mais quadros? Joga todos na pasta (os antigos junto) e roda de novo.
 """
@@ -21,21 +27,38 @@ ITEMS_DIR = os.path.join(BP, "items", "display")
 TEX_DIR = os.path.join(RP, "textures", "items")
 MAIN_JS = os.path.join(BP, "scripts", "main.js")
 
-# As duas series usam laranjas diferentes: (128,49,6) na setinha e
-# (179,67,6) na barra. O teste abaixo pega os dois e deixa de fora os
-# marrons de fundo (80,27,27) e as bordas escuras.
-def is_fill(p):
+# O que conta como "cheio" em cada maquina. A de lava usa dois laranjas
+# diferentes ((128,49,6) na setinha e (179,67,6) na barra) e a de gelo usa os
+# azuis da agua; os dois testes deixam de fora o fundo e o contorno.
+def fill_lava(p):
     r, g, b, a = p
     return a > 128 and r > 100 and g >= 30 and g <= 200 and b < 90 and r - b > 60
+
+
+def fill_gelo(p):
+    r, g, b, a = p
+    return a > 128 and b > 150 and b - r > 100 and b - g > 60
+
+
 ARROW_SIZE = (32, 32)        # a setinha
 FUEL_SIZE = (72, 266)        # a barra vertical de abastecimento
 
+MACHINES = {
+    "lava": {"prefix": "incubator", "frames": "frames", "fill": fill_lava,
+             "tile": {"en_US.lang": "Incubator", "pt_BR.lang": "Incubadora"}},
+    "gelo": {"prefix": "ice_incubator", "frames": "frames_ice", "fill": fill_gelo,
+             "tile": {"en_US.lang": "Ice Incubator", "pt_BR.lang": "Incubadora de Gelo"}},
+}
+
 LANG = {
-    "en_US.lang": {"tile": "Incubator", "block": "Incubator", "fuel": "Lava", "arrow": "Progress",
+    "en_US.lang": {"fuel": "Lava", "fuel_gelo": "Water", "arrow": "Progress",
                    "egg": "Skrill Egg", "egg_hatched": "Hatched Skrill Egg"},
-    "pt_BR.lang": {"tile": "Incubadora", "block": "Incubadora", "fuel": "Lava", "arrow": "Progresso",
+    "pt_BR.lang": {"fuel": "Lava", "fuel_gelo": "Agua", "arrow": "Progresso",
                    "egg": "Ovo de Skrill", "egg_hatched": "Ovo de Skrill Chocado"},
 }
+
+# is_fill vira o teste da maquina que esta sendo instalada no momento
+is_fill = fill_lava
 
 
 # ------------------------------------------------------------------ PNG cru
@@ -165,6 +188,9 @@ def squarify(px, w, h):
 def install(series, prefix, w, h):
     """Grava os quadros como <prefix>_0..N. Cria o vazio se nao veio nenhum."""
     for old in os.listdir(TEX_DIR):
+        # prefix ja vem com a serie junto ("incubator_arrow"), e
+        # "ice_incubator_arrow_0.png" nao comeca com "incubator_arrow_",
+        # entao limpar uma maquina nunca leva a outra.
         if old.startswith(prefix + "_") and old.endswith(".png"):
             os.remove(os.path.join(TEX_DIR, old))
 
@@ -183,87 +209,123 @@ def install(series, prefix, w, h):
 
 
 # ------------------------------------------------- o que depende da contagem
-def regenerate(n_fuel, n_arrow):
+def contagem(prefix, serie):
+    """Quantos quadros <prefix>_<serie>_N.png existem hoje no resource pack."""
+    n = 0
+    while os.path.exists(os.path.join(TEX_DIR, f"{prefix}_{serie}_{n}.png")):
+        n += 1
+    return n
+
+
+def regenerate():
+    """Reescreve itens-display, item_texture, idiomas e main.js pras DUAS
+    maquinas, sempre a partir do que esta gravado em textures/items."""
     shutil.rmtree(ITEMS_DIR, ignore_errors=True)
     os.makedirs(ITEMS_DIR, exist_ok=True)
 
-    tex = {"texture_name": "atlas.items", "resource_pack_name": "sallytek_incubator", "texture_data": {}}
-    for prefix, count in (("incubator_fuel", n_fuel), ("incubator_arrow", n_arrow)):
-        for i in range(count):
-            name = f"{prefix}_{i}"
-            tex["texture_data"][f"sallytek:{name}"] = {"textures": f"textures/items/{name}"}
-            item = {
-                "format_version": "1.20.80",
-                "minecraft:item": {
-                    "description": {
-                        "identifier": f"sallytek:{name}",
-                        "menu_category": {"category": "none", "is_hidden_in_commands": True},
+    tex = {"texture_name": "atlas.items", "resource_pack_name": "sallytek_incubator",
+           "texture_data": {}}
+    conta = {}
+    for maq, cfg in MACHINES.items():
+        pref = cfg["prefix"]
+        conta[maq] = {serie: contagem(pref, serie) for serie in ("fuel", "arrow")}
+        for serie, count in conta[maq].items():
+            for i in range(count):
+                name = f"{pref}_{serie}_{i}"
+                tex["texture_data"][f"sallytek:{name}"] = {"textures": f"textures/items/{name}"}
+                item = {
+                    "format_version": "1.20.80",
+                    "minecraft:item": {
+                        "description": {
+                            "identifier": f"sallytek:{name}",
+                            "menu_category": {"category": "none", "is_hidden_in_commands": True},
+                        },
+                        "components": {
+                            "minecraft:icon": {"textures": {"default": f"sallytek:{name}"}},
+                            "minecraft:max_stack_size": 1,
+                        },
                     },
-                    "components": {
-                        "minecraft:icon": {"textures": {"default": f"sallytek:{name}"}},
-                        "minecraft:max_stack_size": 1,
-                    },
-                },
-            }
-            with open(os.path.join(ITEMS_DIR, name + ".json"), "w") as f:
-                json.dump(item, f, indent="\t"); f.write("\n")
+                }
+                with open(os.path.join(ITEMS_DIR, name + ".json"), "w") as f:
+                    json.dump(item, f, indent="\t"); f.write("\n")
 
     with open(os.path.join(RP, "textures", "item_texture.json"), "w") as f:
         json.dump(tex, f, indent="\t"); f.write("\n")
 
     for fn, t in LANG.items():
         lines = [
-            f"tile.sallytek:incubator.name={t['tile']}",
+            f"tile.sallytek:incubator.name={MACHINES['lava']['tile'][fn]}",
+            f"tile.sallytek:ice_incubator.name={MACHINES['gelo']['tile'][fn]}",
             f"tile.sallytek:skrill_egg.name={t['egg']}",
             f"tile.sallytek:skrill_egg_hatched.name={t['egg_hatched']}",
             "",
-            "## A entidade do container nao leva mais nameTag - assim o bloco nao",
-            "## mostra nome nenhum no mundo. Estas duas chaves so existem porque o",
-            "## titulo do container pode cair em qualquer uma das duas, dependendo",
-            "## de como o jogo resolve o nome de uma entidade sem apelido; ui/",
-            "## chest_screen.json compara as duas. A terceira e o nome antigo, pras",
-            "## incubadoras que ja estavam colocadas antes desta versao.",
-            f"entity.sallytek:incubator.name={t['block']}",
-            f"sallytek.incubator.block={t['block']}",
+            "## titulo do container (apelido da entidade invisivel)",
+            f"sallytek.incubator.block={MACHINES['lava']['tile'][fn]}",
+            f"sallytek.ice_incubator.block={MACHINES['gelo']['tile'][fn]}",
             "",
             "## itens-display das barras",
         ]
-        lines += [f"item.sallytek:incubator_fuel_{i}={t['fuel']}" for i in range(n_fuel)]
-        lines += [f"item.sallytek:incubator_arrow_{i}={t['arrow']}" for i in range(n_arrow)]
+        for maq, cfg in MACHINES.items():
+            pref = cfg["prefix"]
+            rotulo = t["fuel_gelo"] if maq == "gelo" else t["fuel"]
+            lines += [f"item.sallytek:{pref}_fuel_{i}={rotulo}" for i in range(conta[maq]["fuel"])]
+            lines += [f"item.sallytek:{pref}_arrow_{i}={t['arrow']}" for i in range(conta[maq]["arrow"])]
         with open(os.path.join(RP, "texts", fn), "w") as f:
             f.write("\n".join(lines) + "\n")
 
-    # constantes do script: 1 balde = 1 ponto, entao a capacidade e quadros - 1
+    # a tabela MACHINES do script: 1 balde = 1 ponto, entao a capacidade e
+    # quadros - 1 (o quadro 0 e o tanque vazio)
     src = open(MAIN_JS).read()
-    src = re.sub(r"const ARROW_STAGES = \d+;", f"const ARROW_STAGES = {n_arrow};", src)
-    src = re.sub(r"const FUEL_POINTS = \d+;", f"const FUEL_POINTS = {n_fuel - 1};", src)
+    for maq in MACHINES:
+        src = re.sub(rf"arrowStages: \d+,(\s*// ARROW_STAGES {maq})",
+                     rf"arrowStages: {conta[maq]['arrow']},\1", src)
+        src = re.sub(rf"fuelPoints: \d+,(\s*// FUEL_POINTS {maq})",
+                     rf"fuelPoints: {conta[maq]['fuel'] - 1},\1", src)
     open(MAIN_JS, "w").write(src)
+    return conta
+
+
+def instala_maquina(maq, pasta):
+    global is_fill
+    cfg = MACHINES[maq]
+    is_fill = cfg["fill"]
+    arrows, fuel, ignored = collect(pasta)
+    if not arrows and not fuel:
+        print(f"[{maq}] nenhuma textura reconhecida em {pasta}")
+        return None
+    n_arrow, arrow_novo = install(arrows, cfg["prefix"] + "_arrow", *ARROW_SIZE) if arrows else (0, False)
+    n_fuel, fuel_novo = install(fuel, cfg["prefix"] + "_fuel", *FUEL_SIZE) if fuel else (0, False)
+    print(f"[{maq}] setinha: {n_arrow} quadros"
+          + ("  (estagio 0 vazio gerado aqui)" if arrow_novo else ""))
+    for i, (c, name, *_ ) in enumerate(arrows):
+        print(f"   {cfg['prefix']}_arrow_{i + (1 if arrow_novo else 0)} <- {name}  ({c} px cheios)")
+    print(f"[{maq}] abastecimento: {n_fuel} quadros -> capacidade {n_fuel - 1} baldes"
+          + ("  (estagio 0 vazio gerado aqui)" if fuel_novo else ""))
+    for i, (c, name, *_ ) in enumerate(fuel):
+        print(f"   {cfg['prefix']}_fuel_{i + (1 if fuel_novo else 0)} <- {name}  ({c} px cheios)")
+    for name, motivo in ignored:
+        print(f"   ignorado: {name} - {motivo}")
+    return n_arrow, n_fuel
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) == 1:
+        alvos = [(maq, os.path.join(ROOT, "tools", cfg["frames"]))
+                 for maq, cfg in MACHINES.items()]
+    elif len(sys.argv) == 3 and sys.argv[2] in MACHINES:
+        alvos = [(sys.argv[2], sys.argv[1])]
+    else:
         print(__doc__)
         return 2
-    src = sys.argv[1]
-    arrows, fuel, ignored = collect(src)
 
-    if not arrows and not fuel:
-        print("nenhuma textura reconhecida em", src)
-        return 1
-
-    n_arrow, arrow_novo = install(arrows, "incubator_arrow", *ARROW_SIZE) if arrows else (0, False)
-    n_fuel, fuel_novo = install(fuel, "incubator_fuel", *FUEL_SIZE) if fuel else (0, False)
-    regenerate(n_fuel, n_arrow)
-
-    print(f"setinha:      {n_arrow} quadros" + ("  (estagio 0 vazio gerado aqui)" if arrow_novo else ""))
-    for i, (c, name, *_ ) in enumerate(arrows):
-        print(f"   incubator_arrow_{i + (1 if arrow_novo else 0)} <- {name}  ({c} px de lava)")
-    print(f"abastecimento: {n_fuel} quadros -> capacidade {n_fuel - 1} baldes"
-          + ("  (estagio 0 vazio gerado aqui)" if fuel_novo else ""))
-    for i, (c, name, *_ ) in enumerate(fuel):
-        print(f"   incubator_fuel_{i + (1 if fuel_novo else 0)} <- {name}  ({c} px de lava)")
-    for name, motivo in ignored:
-        print(f"ignorado: {name} — {motivo}")
+    for maq, pasta in alvos:
+        if instala_maquina(maq, pasta) is None:
+            return 1
+    conta = regenerate()
+    print()
+    for maq, c in conta.items():
+        print(f"{maq}: {c['arrow']} quadros de setinha, {c['fuel']} de abastecimento "
+              f"-> tanque de {c['fuel'] - 1} baldes")
     return 0
 
 

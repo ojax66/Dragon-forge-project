@@ -60,5 +60,30 @@
     "$cell_image_size": [ 26, 26 ],
     "$item_renderer_panel_size": [ 26, 26 ],
     "$item_renderer_size": [ 26, 26 ]
-  }
+  },
+
+  // ------------------------------------------------------------------ gelo
+  // Os controles abaixo sao os de cima com outra celula. Nada aqui mexe nos
+  // de lava: a Incubadora de lava continua com os arquivos dela intocados.
+
+  "cell_image_ice": {
+    "type": "image",
+    "texture": "textures/ui/ice_incubator_cell",
+    "size": "$cell_image_size"
+  },
+
+  "slot_ice@incubator_common.slot": {
+    "$background_images": "incubator_common.cell_image_ice"
+  },
+
+  "slot_big_ice@incubator_common.slot_big": {
+    "$background_images": "incubator_common.cell_image_ice"
+  },
+
+  "gauge_fuel_ice@incubator_common.gauge_fuel": {
+    "$background_images": "incubator_common.cell_image_ice"
+  },
+
+  // A setinha nao tem celula atras nem na de lava nem na de gelo.
+  "gauge_arrow_ice@incubator_common.gauge_arrow": {}
 }

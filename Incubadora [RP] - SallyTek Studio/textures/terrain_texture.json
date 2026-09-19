@@ -15,6 +15,12 @@
 		},
 		"skrill_egg_hatched": {
 			"textures": "textures/blocks/skrill_egg_hatched"
+		},
+		"ice_incubator_lit": {
+			"textures": "textures/blocks/ice_incubator_lit"
+		},
+		"ice_incubator_unlit": {
+			"textures": "textures/blocks/ice_incubator_unlit"
 		}
 	}
 }
