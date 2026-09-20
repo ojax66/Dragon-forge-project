@@ -352,11 +352,30 @@ altar, a energia passa de 100 e o sub-nome vira o aviso. Catalisador
 recém-craftado não tem energia nem sub-nome, então uma varredura de 1 em 1
 segundo carimba 0% na primeira vez que ele aparece na mão de alguém.
 
+### O ícone do inventário não anima — e por quê
+
+**Nenhum ícone de inventário anima no Bedrock.** As duas formas possíveis
+esbarram na mesma parede:
+
+- **Bloco** (que é o caso do catalisador): o ícone é o modelo 3D renderizado,
+  e esse render é um quadro parado. Não existe animação de geometria em ícone.
+- **Item**: o ícone é uma textura 2D, e animação de textura (*flipbook*,
+  `flipbook_textures.json`) só vale pro atlas de **blocos** — `atlas_tile` sai
+  do `terrain_texture.json`. Item animado é pedido antigo da comunidade e não
+  existe.
+
+Então os anéis giram em **todo lugar do mundo**, que é onde dá: em cima do
+altar e também com o catalisador colocado como bloco. Nos dois casos o que
+desenha é a mesma entidade da animação — colocado, o bloco vira invisível
+(estado `sallytek:placed`) e a entidade toma o lugar dele, com
+`minecraft:scale` 2.0 pra bater com o tamanho do ícone. Só no inventário ele
+fica parado, e isso é do jogo, não do add-on.
+
 ### Por que o catalisador é bloco e não item
 
 Item do Bedrock não tem modelo 3D, só ícone 2D — e ícone de catalisador não
-veio. Sendo bloco, o ícone do inventário é o próprio modelo renderizado. O preço
-é que dá pra colocar ele no chão como bloco; parado, sem os anéis girando.
+veio. Sendo bloco, o ícone do inventário é o próprio modelo renderizado, em 3D
+e do tamanho certo.
 
 Para isso `tools/make_altar_geo.py` gera `geometry.catalyst_item`, que muda duas
 coisas em relação ao arquivo do Blockbench:
@@ -459,8 +478,10 @@ dois estão iguais. Trocar é sobrescrever esse arquivo, nada mais.
   em vez de voltar pro slot, que continua ocupado.
 - O bloco quebrado por explosão ou `/setblock` só devolve o conteúdo no próximo
   tique da entidade.
-- **Encostar a mira no bloco mostra o nome flutuando.** É o preço do apelido da
-  entidade, e o apelido é o que faz a tela da Incubadora abrir.
+- **O ícone do catalisador no inventário fica parado.** Ver a seção acima: o
+  Bedrock não anima ícone de inventário, de bloco nem de item.
+- **Colocar e quebrar o catalisador zera a energia dele.** A energia mora no
+  item; a forma de bloco não carrega essa informação.
 
 ## O que foi gerado aqui, e não veio pronto
 

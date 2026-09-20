@@ -5,6 +5,12 @@
 			"identifier": "sallytek:catalyst",
 			"menu_category": {
 				"category": "items"
+			},
+			"states": {
+				"sallytek:placed": [
+					false,
+					true
+				]
 			}
 		},
 		"components": {
@@ -48,6 +54,14 @@
 			"minecraft:light_dampening": 0,
 			"minecraft:light_emission": 3,
 			"minecraft:map_color": "#c9c9d6"
-		}
+		},
+		"permutations": [
+			{
+				"condition": "q.block_state('sallytek:placed') == true",
+				"components": {
+					"minecraft:geometry": "geometry.incubator_empty"
+				}
+			}
+		]
 	}
 }

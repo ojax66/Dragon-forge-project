@@ -51,7 +51,25 @@
 				"has_gravity": false,
 				"has_collision": false
 			},
-			"minecraft:persistent": {}
+			"minecraft:persistent": {},
+			"minecraft:scale": {
+				"value": 2.0
+			},
+			"minecraft:timer": {
+				"time": 1.0,
+				"looping": true,
+				"time_down_event": {
+					"event": "sallytek:ticking",
+					"target": "self"
+				}
+			}
+		},
+		"events": {
+			"sallytek:ticking": {
+				"queue_command": {
+					"command": "scriptevent sallytek:display_tick"
+				}
+			}
 		}
 	}
 }

@@ -179,6 +179,57 @@ system.runInterval(() => {
 	}
 }, 20);
 
+/* ------------------ catalisador colocado no mundo tambem gira -------------- */
+
+// O Bedrock nao anima icone de inventario: bloco tem icone 3D parado e item
+// tem icone 2D, e animacao de textura (flipbook) so vale pro atlas de blocos.
+// Entao os aneis giram em todo lugar que da: em cima do altar e tambem quando
+// o catalisador e colocado como bloco - ai o bloco fica invisivel e quem
+// desenha e a mesma entidade da animacao.
+
+function isCatalystBlock(typeId) {
+	return typeId === CATALYST || typeId === CATALYST_CHARGED;
+}
+
+world.afterEvents.playerPlaceBlock.subscribe((ev) => {
+	const block = ev.block;
+	if (!isCatalystBlock(block.typeId)) return;
+	block.setPermutation(block.permutation.withState("sallytek:placed", true));
+	const at = { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 };
+	for (const e of ev.dimension.getEntities({ location: at, maxDistance: 0.9 })) {
+		if (e.typeId === DISPLAY) e.remove();
+	}
+	ev.dimension.spawnEntity(DISPLAY, at)
+		.setProperty(PROP_CHARGED, block.typeId === CATALYST_CHARGED);
+});
+
+world.afterEvents.playerBreakBlock.subscribe((ev) => {
+	if (!isCatalystBlock(ev.brokenBlockPermutation.type.id)) return;
+	const at = { x: ev.block.location.x + 0.5, y: ev.block.location.y, z: ev.block.location.z + 0.5 };
+	for (const e of ev.dimension.getEntities({ location: at, maxDistance: 0.9 })) {
+		if (e.typeId === DISPLAY) e.remove();
+	}
+});
+
+// Faxina: uma vez por segundo cada enfeite confere se ainda tem motivo pra
+// existir. Sem isto, bloco quebrado por explosao ou /setblock deixaria a
+// entidade orfa girando no ar.
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+	if (ev.id !== "sallytek:display_tick") return;
+	const e = ev.sourceEntity;
+	if (!e || e.typeId !== DISPLAY) return;
+	const p = {
+		x: Math.floor(e.location.x),
+		y: Math.floor(e.location.y),
+		z: Math.floor(e.location.z)
+	};
+	// enfeite de catalisador colocado: o bloco esta no mesmo lugar que ele
+	if (isCatalystBlock(e.dimension.getBlock(p)?.typeId)) return;
+	// enfeite de altar: o altar esta um bloco abaixo (ver FLOAT_Y)
+	if (ALTAR_BLOCKS.includes(e.dimension.getBlock({ ...p, y: p.y - 1 })?.typeId)) return;
+	e.remove();
+});
+
 /* Item dropado que e enfeite de altar nunca e pego por ninguem. */
 world.beforeEvents.entityItemPickup.subscribe((ev) => {
 	if (ev.item?.hasTag(TAG_PINNED)) ev.cancel = true;
