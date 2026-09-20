@@ -5,10 +5,16 @@
 			"identifier": "sallytek:skrill_egg_hatched",
 			"menu_category": {
 				"category": "nature"
+			},
+			"states": {
+				"sallytek:placed": [
+					false,
+					true
+				]
 			}
 		},
 		"components": {
-			"minecraft:geometry": "geometry.eggs_block",
+			"minecraft:geometry": "geometry.skrill_egg_item",
 			"minecraft:material_instances": {
 				"*": {
 					"texture": "skrill_egg_hatched",
@@ -48,6 +54,14 @@
 			"minecraft:light_dampening": 0,
 			"minecraft:light_emission": 0,
 			"minecraft:map_color": "#2a1836"
-		}
+		},
+		"permutations": [
+			{
+				"condition": "q.block_state('sallytek:placed') == true",
+				"components": {
+					"minecraft:geometry": "geometry.eggs_block"
+				}
+			}
+		]
 	}
 }

@@ -4,7 +4,7 @@
 		"description": {
 			"identifier": "sallytek:secondary_altar",
 			"menu_category": {
-				"category": "decoration"
+				"category": "construction"
 			}
 		},
 		"components": {

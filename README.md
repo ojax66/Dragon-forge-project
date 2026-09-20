@@ -334,36 +334,85 @@ O catalisador é a exceção: ele tem modelo e animação próprios (os anéis g
 cada um pro seu lado, `animation.catalyst.float`), então em cima do altar ele
 vira a entidade `sallytek:catalyst_display`.
 
+### A porcentagem no sub-nome
+
+A energia mora **no próprio item** (propriedade dinâmica `sallytek:energy`), e o
+sub-nome é o *lore* do item — a linha que o Minecraft desenha embaixo do nome.
+A cor sai da faixa:
+
+| energia | cor |
+|---|---|
+| 0% a 25% | vermelho |
+| 25% a 75% | amarelo |
+| 75% a 100% | verde |
+| acima de 100% | vermelho vivo, em negrito, com `!` |
+
+A conta **não para nos 100%**: reabastecendo o anel com o catalisador ainda no
+altar, a energia passa de 100 e o sub-nome vira o aviso. Catalisador
+recém-craftado não tem energia nem sub-nome, então uma varredura de 1 em 1
+segundo carimba 0% na primeira vez que ele aparece na mão de alguém.
+
 ### Por que o catalisador é bloco e não item
 
 Item do Bedrock não tem modelo 3D, só ícone 2D — e ícone de catalisador não
 veio. Sendo bloco, o ícone do inventário é o próprio modelo renderizado. O preço
 é que dá pra colocar ele no chão como bloco; parado, sem os anéis girando.
 
-Para isso `tools/make_altar_geo.py` gera `geometry.catalyst_item`: os mesmos 40
-cubos num osso só. Geometria de bloco não aceita osso com `parent`, e o
-catalisador tem três — mas nenhum deles gira sozinho (a hierarquia só existe pra
-animação mexer em cada anel), então juntar tudo num osso dá exatamente o mesmo
-desenho parado.
+Para isso `tools/make_altar_geo.py` gera `geometry.catalyst_item`, que muda duas
+coisas em relação ao arquivo do Blockbench:
 
-## Sobre o nome do bloco
+1. **Os mesmos 40 cubos num osso só.** Geometria de bloco não aceita osso com
+   `parent`, e o catalisador tem três — mas nenhum deles gira sozinho (a
+   hierarquia só existe pra animação mexer em cada anel), então juntar tudo num
+   osso dá exatamente o mesmo desenho parado.
+2. **Escalado 2,06x.** O modelo tem 5x7,8x2 px, um terço do cubo do bloco: no
+   inventário saía minúsculo. Escalado, ocupa 10,4x16x4,1. Escala uniforme não
+   mexe em ângulo nenhum, então o desenho é o mesmo, só maior — e isso vale só
+   pro ícone: quem anima é a entidade, que usa o arquivo original, no tamanho
+   original.
 
-O **rótulo de título saiu da tela** (não existe `title_label` em
-`ui/incubator_screen.json`), e é isso que dá pra fazer sem quebrar nada.
+### O ovo no inventário
 
-O apelido da entidade (`nameTag = "sallytek.incubator.block"`) **ficou**. Ele é
-a única forma comprovada de a porteira de `ui/chest_screen.json` reconhecer que
-o contêiner aberto é a Incubadora. Na versão 1.16.0 a entidade nasceu sem
-apelido pra sumir com o nome flutuante em cima do bloco; o preço foi a tela
-voltar a abrir como baú comum, então o apelido voltou. Quem tinha uma Incubadora
-da 1.16.0 recebe o apelido de volta no primeiro tique do relógio.
+O Bedrock desenha o ícone de um bloco olhando pra face **sul**, e os espinhos do
+ovo apontam justamente pro +z, que é o sul: no inventário eles ficavam na frente
+do ovo. Como não dá pra dar um ângulo só pro ícone, os dois ovos ganharam o
+estado `sallytek:placed` — em `false` (que é o estado do **item**) usam
+`geometry.skrill_egg_item`, gerado por `tools/make_egg_icon.py` com meia volta
+em Y; o script liga `true` ao colocar e a permutação volta pro modelo original,
+sem tocar em nada.
 
-Ou seja: **a mira encostada no bloco ainda mostra o nome flutuando.** Isso é do
-Bedrock — entidade com apelido desenha o apelido — e só sai junto com o apelido,
-que é o que faz a tela funcionar.
+A meia volta é exata, não aproximação: ponto `(x,y,z) → (-x,y,-z)`, e giro de
+cubo `(rx,ry,rz) → (-rx,ry,-rz)` — que sai de conjugar a rotação pela matriz
+`diag(-1,1,-1)`.
 
-O **item** continua com nome (`Incubadora`) — é o que aparece no inventário e no
-criativo; sem isso ele ficaria com o identificador cru na mão.
+## O bloco sem nome, sem quebrar a tela
+
+Três tentativas até achar a saída, então vale registrar:
+
+1. **Tirar o apelido da entidade** (1.16.0) — sumiu o nome, mas sumiu a tela
+   junto: sem apelido o título do contêiner deixa de ser uma string nossa e o
+   Bedrock abre baú comum.
+2. **Devolver o apelido** (1.17.0) — a tela voltou e o nome também.
+3. **Apelido invisível** (1.21.0) — é o de agora.
+
+A vanilla só usa as páginas de glifo `glyph_E0` e `glyph_E1` (os ícones de
+botão); a página **E2** (U+E200 a U+E2FF) está livre. O resource pack manda
+`font/glyph_E2.png` **256x256 todo transparente**, e o apelido de cada
+Incubadora passou a ser um caractere dessa página:
+
+| máquina | apelido |
+|---|---|
+| lava | `U+E200` |
+| gelo | `U+E201` |
+
+Continua sendo uma string única — que é tudo que a porteira de
+`ui/chest_screen.json` precisa pra comparar — e não desenha nada em cima do
+bloco. A porteira aceita também o apelido legível de até a 1.20.0, pras
+Incubadoras que já estavam colocadas; o script troca pelo invisível no primeiro
+tique do relógio, então a linha antiga é só pra não piscar.
+
+O rótulo de título continua fora da tela, e o **item** continua com nome
+(`Incubadora`), que é o que aparece no inventário.
 
 ## O ovo de Skrill
 

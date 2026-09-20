@@ -60,9 +60,15 @@ const MACHINES = [
 		nome: "lava",
 		blockId: "sallytek:incubator",
 		entityId: "sallytek:incubator",
-		// Titulo do container. E tambem a chave de traducao no .lang e o valor
-		// comparado em ui/chest_screen.json. Nao traduza aqui.
-		containerName: "sallytek.incubator.block",
+		// Apelido da entidade. E o titulo do container, e o valor comparado em
+		// ui/chest_screen.json. E um caractere invisivel de proposito: apelido
+		// e o que faz a tela certa abrir, mas apelido legivel fica escrito em
+		// cima do bloco. U+E200 sai da pagina de glifos font/glyph_E2.png, que
+		// vem em branco no resource pack - a vanilla so usa E0 e E1.
+		containerName: "\uE200",
+		// Apelido usado ate a versao 1.20.0, quando o nome aparecia no bloco.
+		// Continua aceito em chest_screen.json pras que ja estavam colocadas.
+		containerNameAntigo: "sallytek.incubator.block",
 		fuelItem: "minecraft:lava_bucket",
 		gaugePrefix: "sallytek:incubator_",
 		arrowStages: 6,   // ARROW_STAGES lava
@@ -73,7 +79,8 @@ const MACHINES = [
 		nome: "gelo",
 		blockId: "sallytek:ice_incubator",
 		entityId: "sallytek:ice_incubator",
-		containerName: "sallytek.ice_incubator.block",
+		containerName: "\uE201",
+		containerNameAntigo: "sallytek.ice_incubator.block",
 		fuelItem: "minecraft:water_bucket",
 		gaugePrefix: "sallytek:ice_incubator_",
 		arrowStages: 6,   // ARROW_STAGES gelo
@@ -157,6 +164,20 @@ world.afterEvents.playerInteractWithBlock.subscribe((ev) => {
 		block.setPermutation(block.permutation.withState("sallytek:placed", true));
 		ev.player.onScreenDisplay.setActionBar("§eIncubadora religada. Clique de novo pra abrir.");
 	}
+});
+
+/* ------------------- ovo de Skrill: icone x bloco colocado ----------------- */
+
+// O Bedrock desenha o icone de um bloco olhando pra face sul, e os espinhos do
+// ovo apontam pra la - no inventario eles ficavam na frente, "ao contrario".
+// O estado "placed" resolve: em false (o item) o ovo usa a geometria girada
+// meia volta (tools/make_egg_icon.py); colocado, volta pro modelo original.
+const EGG_BLOCKS = ["sallytek:skrill_egg", "sallytek:skrill_egg_hatched"];
+
+world.afterEvents.playerPlaceBlock.subscribe((ev) => {
+	const block = ev.block;
+	if (!EGG_BLOCKS.includes(block.typeId)) return;
+	block.setPermutation(block.permutation.withState("sallytek:placed", true));
 });
 
 /* --------------------- faxina: item-display nunca e do jogador ------------- */

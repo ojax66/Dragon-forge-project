@@ -33,7 +33,7 @@ const BASE_CRYSTAL = "sallytek:base_crystal";
 const AMETHYST = "minecraft:amethyst_shard";
 
 const TAG_PINNED = "sallytek_altar_item";   // item dropado que e enfeite de altar
-const PROP_CHARGE = "sallytek:charge";      // ametistas ja absorvidas (0..RING.length)
+const PROP_ENERGY = "sallytek:energy";      // % de energia, guardada no proprio item
 const PROP_AGE = "sallytek:display_age";    // ha quantos tiques o enfeite existe
 const PROP_CHARGED = "sallytek:charged";    // propriedade de entidade do catalisador
 
@@ -59,8 +59,10 @@ for (let dx = -3; dx <= 3; dx++) {
 	}
 }
 
-// Capacidade do catalisador: uma ametista por altar secundario do anel.
-// Cada uma vale 100/12 = 8.33% da carga.
+// 100% de energia = uma ametista por altar secundario do anel, entao cada
+// ametista vale 100/12 = 8.33%. A conta nao para nos 100%: se o jogador
+// reabastecer o anel com o catalisador ainda no lugar, a energia passa de 100
+// e o sub-nome vira o aviso vermelho.
 const RITUAL_CAPACITY = RING.length;
 
 /* ------------------------------- nucleo do altar --------------------------- */
@@ -109,7 +111,7 @@ function spawnDisplay(dimension, loc, item) {
 	if (!item) return;
 	const at = displayLocation(loc);
 
-	if (item.typeId === CATALYST || item.typeId === CATALYST_CHARGED) {
+	if (isCatalyst(item)) {
 		// Modelo e animacao proprios: os aneis giram cada um pro seu lado.
 		const ent = dimension.spawnEntity(DISPLAY, at);
 		ent.setProperty(PROP_CHARGED, isCharged(item));
@@ -124,10 +126,58 @@ function spawnDisplay(dimension, loc, item) {
 }
 
 // Vazio e carregado sao dois blocos diferentes - assim o icone, a luz e o que
-// o jogador carrega na mao ja saem certos, sem depender de dado no item.
+// o jogador carrega na mao ja saem certos.
+function isCatalyst(item) {
+	return item?.typeId === CATALYST || item?.typeId === CATALYST_CHARGED;
+}
+
 function isCharged(item) {
 	return item?.typeId === CATALYST_CHARGED;
 }
+
+/* ------------------------ a energia e o sub-nome dela ---------------------- */
+
+function energyOf(item) {
+	const v = item?.getDynamicProperty?.(PROP_ENERGY);
+	return typeof v === "number" ? v : 0;
+}
+
+// O sub-nome que aparece embaixo do nome do item, na cor da faixa:
+//   0 a 25%   vermelho
+//   25 a 75%  amarelo
+//   75 a 100% verde
+//   acima de 100%  vermelho vivo, em negrito, com "!"
+function loreFor(pct) {
+	const n = Math.round(pct);
+	if (pct > 100) return [`§c§l${n}% !`];
+	if (pct >= 75) return [`§a${n}%`];
+	if (pct >= 25) return [`§e${n}%`];
+	return [`§c${n}%`];
+}
+
+// Monta o catalisador do jeito certo pra energia que ele tem: vazio ou
+// carregado, com a energia gravada nele e o sub-nome ja escrito.
+function catalystWith(pct) {
+	const item = new ItemStack(pct >= 100 ? CATALYST_CHARGED : CATALYST, 1);
+	item.setDynamicProperty(PROP_ENERGY, pct);
+	item.setLore(loreFor(pct));
+	return item;
+}
+
+// Catalisador recem-craftado nao tem energia nem sub-nome: carimba 0% na
+// primeira vez que ele aparece na mao de alguem.
+system.runInterval(() => {
+	for (const player of world.getAllPlayers()) {
+		const inv = player.getComponent("minecraft:inventory")?.container;
+		if (!inv) continue;
+		for (let i = 0; i < inv.size; i++) {
+			const item = inv.getItem(i);
+			if (!isCatalyst(item)) continue;
+			if (typeof item.getDynamicProperty(PROP_ENERGY) === "number") continue;
+			inv.setItem(i, catalystWith(isCharged(item) ? 100 : 0));
+		}
+	}
+}, 20);
 
 /* Item dropado que e enfeite de altar nunca e pego por ninguem. */
 world.beforeEvents.entityItemPickup.subscribe((ev) => {
@@ -177,8 +227,6 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
 			devolve(player, core, dimension, loc, guardado);
 		} else if (naMao) {
 			recebe(player, core, dimension, loc, naMao);
-		} else if (block.typeId === ALTAR_MAIN) {
-			mostraCarga(player, core);
 		}
 	});
 });
@@ -215,13 +263,6 @@ function devolve(player, core, dimension, loc, guardado) {
 		dimension.spawnItem(guardado, displayLocation(loc));
 	}
 	player.playSound("random.pop", { location: displayLocation(loc) });
-}
-
-function mostraCarga(player, core) {
-	const carga = core.getDynamicProperty(PROP_CHARGE) ?? 0;
-	const pct = Math.round((carga / RITUAL_CAPACITY) * 100);
-	player.onScreenDisplay.setActionBar(
-		`§dCatalisador: §f${pct}% §7(${carga}/${RITUAL_CAPACITY} ametistas)`);
 }
 
 /* ------------------------------- o ritual ---------------------------------- */
@@ -267,33 +308,31 @@ function tickAltar(core) {
 }
 
 function ritual(core, block, item) {
-	// So o altar principal com um catalisador vazio em cima puxa magia.
-	if (!item || item.typeId !== CATALYST || isCharged(item)) return;
+	// So o altar principal, com um catalisador em cima, puxa magia.
+	if (!isCatalyst(item)) return;
 
-	let carga = core.getDynamicProperty(PROP_CHARGE) ?? 0;
-	if (carga >= RITUAL_CAPACITY) return;
-
-	// Uma ametista por segundo, pra dar pra ver a carga subindo.
+	// Uma ametista por segundo, pra dar pra ver a energia subindo.
 	const doador = proximaAmetista(core.dimension, block.location);
 	if (!doador) return;
 
-	// A ametista entrega a magia e fica sendo um cristal base.
-	setHeldItem(doador.core, new ItemStack(BASE_CRYSTAL, 1));
-	spawnDisplay(doador.core.dimension, doador.loc, new ItemStack(BASE_CRYSTAL, 1));
+	// A ametista entrega a magia e fica sendo um cristal base no altar dela.
+	const cristal = new ItemStack(BASE_CRYSTAL, 1);
+	setHeldItem(doador.core, cristal);
+	spawnDisplay(doador.core.dimension, doador.loc, cristal);
 	doador.core.setDynamicProperty(PROP_AGE, 0);
 
-	carga += 1;
-	core.setDynamicProperty(PROP_CHARGE, carga);
+	// Cada ametista vale uma fatia de 100% dividida pelos altares do anel.
+	const antes = energyOf(item);
+	const agora = antes + 100 / RITUAL_CAPACITY;
+	const novo = catalystWith(agora);
+	setHeldItem(core, novo);
+	spawnDisplay(core.dimension, block.location, novo);
+	core.setDynamicProperty(PROP_AGE, 0);
 
 	const centro = displayLocation(block.location);
 	core.dimension.playSound("random.orb", centro);
-
-	if (carga >= RITUAL_CAPACITY) {
-		// 100%: o catalisador fica cheio.
-		const cheio = new ItemStack(CATALYST_CHARGED, 1);
-		setHeldItem(core, cheio);
-		spawnDisplay(core.dimension, block.location, cheio);
-		core.setDynamicProperty(PROP_AGE, 0);
+	// Passou de 100 agora: o catalisador encheu.
+	if (antes < 100 && agora >= 100) {
 		core.dimension.playSound("beacon.activate", centro);
 	}
 }

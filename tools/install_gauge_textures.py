@@ -63,6 +63,13 @@ LANG = {
                    "base_crystal": "Cristal Base"},
 }
 
+# Itens que nao sao barra mas moram no mesmo item_texture.json. Sem isto o
+# regenerate() aqui embaixo apagaria eles toda vez que rodasse - foi o que
+# deixou o cristal base sem textura na 1.20.0.
+ITENS_FIXOS = {
+    "sallytek:base_crystal": "textures/items/base_crystal",
+}
+
 # is_fill vira o teste da maquina que esta sendo instalada no momento
 is_fill = fill_lava
 
@@ -230,7 +237,7 @@ def regenerate():
     os.makedirs(ITEMS_DIR, exist_ok=True)
 
     tex = {"texture_name": "atlas.items", "resource_pack_name": "sallytek_incubator",
-           "texture_data": {}}
+           "texture_data": {k: {"textures": v} for k, v in ITENS_FIXOS.items()}}
     conta = {}
     for maq, cfg in MACHINES.items():
         pref = cfg["prefix"]
