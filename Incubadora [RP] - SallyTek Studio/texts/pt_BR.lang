@@ -4,8 +4,9 @@ tile.sallytek:skrill_egg.name=Ovo de Skrill
 tile.sallytek:skrill_egg_hatched.name=Ovo de Skrill Chocado
 tile.sallytek:main_altar.name=Altar Principal
 tile.sallytek:secondary_altar.name=Altar Secundario
-tile.sallytek:catalyst.name=Catalisador Vazio
-tile.sallytek:catalyst_charged.name=Catalisador Carregado
+item.sallytek:catalyst.name=Catalisador Vazio
+item.sallytek:catalyst_charging.name=Catalisador Carregando
+item.sallytek:catalyst_charged.name=Catalisador Carregado
 item.sallytek:base_crystal=Cristal Base
 
 ## titulo do container (apelido da entidade invisivel)

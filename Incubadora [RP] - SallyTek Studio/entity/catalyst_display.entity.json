@@ -8,6 +8,7 @@
 			},
 			"textures": {
 				"empty": "textures/blocks/catalyst",
+				"charging": "textures/blocks/catalyst_charging",
 				"charged": "textures/blocks/catalyst_charged"
 			},
 			"geometry": {

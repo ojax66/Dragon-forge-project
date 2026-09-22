@@ -1,0 +1,28 @@
+{
+	"format_version": "1.10.0",
+	"minecraft:attachable": {
+		"description": {
+			"identifier": "sallytek:catalyst_charged",
+			"materials": {
+				"default": "entity_alphatest"
+			},
+			"textures": {
+				"default": "textures/blocks/catalyst_charged"
+			},
+			"geometry": {
+				"default": "geometry.catalyst_item"
+			},
+			"animations": {
+				"spin": "animation.catalyst_item.spin"
+			},
+			"scripts": {
+				"animate": [
+					"spin"
+				]
+			},
+			"render_controllers": [
+				"controller.render.item_default"
+			]
+		}
+	}
+}

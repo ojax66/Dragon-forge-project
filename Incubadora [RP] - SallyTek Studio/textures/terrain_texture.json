@@ -27,12 +27,6 @@
 		},
 		"secondary_altar": {
 			"textures": "textures/blocks/secondary_altar"
-		},
-		"catalyst": {
-			"textures": "textures/blocks/catalyst"
-		},
-		"catalyst_charged": {
-			"textures": "textures/blocks/catalyst_charged"
 		}
 	}
 }

@@ -1,5 +1,13 @@
 # Incubadora Funcional — SallyTek Studio / Dragon Forge
 
+> **Este README está na v1.22.0 e o pacote está na v1.23.0.** A 1.23.0 é a
+> versão do autor: o catalisador deixou de ser bloco e virou **item com
+> attachable** (três estados: vazio, carregando e cheio), entrou uma partícula
+> `energy_wisp` que viaja da ametista até o altar principal, e o `altars.js`
+> foi reescrito. As seções sobre o catalisador abaixo descrevem o desenho
+> antigo até a documentação ser refeita.
+
+
 Add-on de Minecraft Bedrock com duas máquinas que funcionam como fornalha: você
 põe um item pra chocar, abastece com balde e o progresso corre até sair o
 resultado.

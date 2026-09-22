@@ -28,14 +28,19 @@ const CORE = "sallytek:altar_core";
 const DISPLAY = "sallytek:catalyst_display";
 
 const CATALYST = "sallytek:catalyst";
+const CATALYST_CHARGING = "sallytek:catalyst_charging";
 const CATALYST_CHARGED = "sallytek:catalyst_charged";
 const BASE_CRYSTAL = "sallytek:base_crystal";
 const AMETHYST = "minecraft:amethyst_shard";
 
-const TAG_PINNED = "sallytek_altar_item";   // item dropado que e enfeite de altar
-const PROP_ENERGY = "sallytek:energy";      // % de energia, guardada no proprio item
-const PROP_AGE = "sallytek:display_age";    // ha quantos tiques o enfeite existe
-const PROP_CHARGED = "sallytek:charged";    // propriedade de entidade do catalisador
+const TAG_PINNED = "sallytek_altar_item";     // item dropado que e enfeite de altar
+const PROP_ENERGY = "sallytek:energy";        // % de energia, guardada no proprio item
+const PROP_AGE = "sallytek:display_age";      // ha quantos tiques o enfeite existe
+const PROP_CHARGE_STATE = "sallytek:charge_state"; // 0 vazio / 1 carregando (roxo claro) / 2 cheio, na entidade
+const PROP_SENDING = "sallytek:sending";      // true no altar secundario enquanto a particula dele esta viajando
+
+const PARTICLE_ENERGY = "sallytek:energy_wisp"; // particula roxa que viaja da ametista ate o catalisador
+const VOO_DURACAO = 14; // tiques ate a particula chegar no altar principal
 
 // Altura em que o item flutua, contada do canto de baixo do bloco do altar.
 const FLOAT_Y = 1.15;
@@ -114,7 +119,12 @@ function spawnDisplay(dimension, loc, item) {
 	if (isCatalyst(item)) {
 		// Modelo e animacao proprios: os aneis giram cada um pro seu lado.
 		const ent = dimension.spawnEntity(DISPLAY, at);
-		ent.setProperty(PROP_CHARGED, isCharged(item));
+		ent.setProperty(PROP_CHARGE_STATE, chargeStateOf(item));
+		// O sub-nome (%) fica gravado no item guardado dentro do altar, mas
+		// quem flutua em cima e essa entidade - entidade nao mostra tooltip
+		// de item. Sem isto o jogador nunca via a porcentagem sem tirar o
+		// catalisador do altar.
+		ent.nameTag = loreFor(energyOf(item))[0];
 		return;
 	}
 
@@ -125,14 +135,17 @@ function spawnDisplay(dimension, loc, item) {
 	drop.clearVelocity();
 }
 
-// Vazio e carregado sao dois blocos diferentes - assim o icone, a luz e o que
-// o jogador carrega na mao ja saem certos.
+// Vazio, carregando e cheio sao tres blocos diferentes - assim o icone, a luz
+// e o que o jogador carrega na mao ja saem certos.
 function isCatalyst(item) {
-	return item?.typeId === CATALYST || item?.typeId === CATALYST_CHARGED;
+	return item?.typeId === CATALYST || item?.typeId === CATALYST_CHARGING || item?.typeId === CATALYST_CHARGED;
 }
 
-function isCharged(item) {
-	return item?.typeId === CATALYST_CHARGED;
+// 0 vazio / 1 carregando (roxo claro, ainda enchendo) / 2 cheio (roxo).
+function chargeStateOf(item) {
+	if (item?.typeId === CATALYST_CHARGED) return 2;
+	if (item?.typeId === CATALYST_CHARGING) return 1;
+	return 0;
 }
 
 /* ------------------------ a energia e o sub-nome dela ---------------------- */
@@ -146,26 +159,37 @@ function energyOf(item) {
 //   0 a 25%   vermelho
 //   25 a 75%  amarelo
 //   75 a 100% verde
+//   exatos 100%    verde brilhante, em negrito
 //   acima de 100%  vermelho vivo, em negrito, com "!"
 function loreFor(pct) {
 	const n = Math.round(pct);
-	if (pct > 100) return [`§c§l${n}% !`];
-	if (pct >= 75) return [`§a${n}%`];
-	if (pct >= 25) return [`§e${n}%`];
-	return [`§c${n}%`];
+	if (pct > 100) return [`§c§lEnergia: ${n}% !`];
+	if (pct >= 100) return [`§a§lEnergia: ${n}%`];
+	if (pct >= 75) return [`§aEnergia: ${n}%`];
+	if (pct >= 25) return [`§eEnergia: ${n}%`];
+	return [`§cEnergia: ${n}%`];
 }
 
-// Monta o catalisador do jeito certo pra energia que ele tem: vazio ou
-// carregado, com a energia gravada nele e o sub-nome ja escrito.
+// Monta o catalisador do jeito certo pra energia que ele tem: vazio (0%),
+// carregando - roxo claro - (entre 0 e 100%) ou cheio - roxo - (100%+),
+// com a energia gravada nele e o sub-nome ja escrito.
 function catalystWith(pct) {
-	const item = new ItemStack(pct >= 100 ? CATALYST_CHARGED : CATALYST, 1);
+	const tipo = pct <= 0 ? CATALYST : pct >= 100 ? CATALYST_CHARGED : CATALYST_CHARGING;
+	const item = new ItemStack(tipo, 1);
 	item.setDynamicProperty(PROP_ENERGY, pct);
 	item.setLore(loreFor(pct));
 	return item;
 }
 
-// Catalisador recem-craftado nao tem energia nem sub-nome: carimba 0% na
-// primeira vez que ele aparece na mao de alguem.
+// Catalisador recem-craftado nao tem energia nem sub-nome: carimba a
+// energia certa (0%, 100% ou um meio-termo) na primeira vez que ele
+// aparece na mao de alguem - por exemplo, vindo do inventario criativo.
+function energiaPadrao(item) {
+	if (item?.typeId === CATALYST_CHARGED) return 100;
+	if (item?.typeId === CATALYST_CHARGING) return 50;
+	return 0;
+}
+
 system.runInterval(() => {
 	for (const player of world.getAllPlayers()) {
 		const inv = player.getComponent("minecraft:inventory")?.container;
@@ -174,45 +198,15 @@ system.runInterval(() => {
 			const item = inv.getItem(i);
 			if (!isCatalyst(item)) continue;
 			if (typeof item.getDynamicProperty(PROP_ENERGY) === "number") continue;
-			inv.setItem(i, catalystWith(isCharged(item) ? 100 : 0));
+			inv.setItem(i, catalystWith(energiaPadrao(item)));
 		}
 	}
 }, 20);
 
-/* ------------------ catalisador colocado no mundo tambem gira -------------- */
-
-// O Bedrock nao anima icone de inventario: bloco tem icone 3D parado e item
-// tem icone 2D, e animacao de textura (flipbook) so vale pro atlas de blocos.
-// Entao os aneis giram em todo lugar que da: em cima do altar e tambem quando
-// o catalisador e colocado como bloco - ai o bloco fica invisivel e quem
-// desenha e a mesma entidade da animacao.
-
-function isCatalystBlock(typeId) {
-	return typeId === CATALYST || typeId === CATALYST_CHARGED;
-}
-
-world.afterEvents.playerPlaceBlock.subscribe((ev) => {
-	const block = ev.block;
-	if (!isCatalystBlock(block.typeId)) return;
-	block.setPermutation(block.permutation.withState("sallytek:placed", true));
-	const at = { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 };
-	for (const e of ev.dimension.getEntities({ location: at, maxDistance: 0.9 })) {
-		if (e.typeId === DISPLAY) e.remove();
-	}
-	ev.dimension.spawnEntity(DISPLAY, at)
-		.setProperty(PROP_CHARGED, block.typeId === CATALYST_CHARGED);
-});
-
-world.afterEvents.playerBreakBlock.subscribe((ev) => {
-	if (!isCatalystBlock(ev.brokenBlockPermutation.type.id)) return;
-	const at = { x: ev.block.location.x + 0.5, y: ev.block.location.y, z: ev.block.location.z + 0.5 };
-	for (const e of ev.dimension.getEntities({ location: at, maxDistance: 0.9 })) {
-		if (e.typeId === DISPLAY) e.remove();
-	}
-});
+/* ------------------------------------------------------------------------- */
 
 // Faxina: uma vez por segundo cada enfeite confere se ainda tem motivo pra
-// existir. Sem isto, bloco quebrado por explosao ou /setblock deixaria a
+// existir. Sem isto, um altar quebrado por explosao ou /setblock deixaria a
 // entidade orfa girando no ar.
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
 	if (ev.id !== "sallytek:display_tick") return;
@@ -223,8 +217,6 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
 		y: Math.floor(e.location.y),
 		z: Math.floor(e.location.z)
 	};
-	// enfeite de catalisador colocado: o bloco esta no mesmo lugar que ele
-	if (isCatalystBlock(e.dimension.getBlock(p)?.typeId)) return;
 	// enfeite de altar: o altar esta um bloco abaixo (ver FLOAT_Y)
 	if (ALTAR_BLOCKS.includes(e.dimension.getBlock({ ...p, y: p.y - 1 })?.typeId)) return;
 	e.remove();
@@ -355,40 +347,108 @@ function tickAltar(core) {
 		core.setDynamicProperty(PROP_AGE, idade);
 	}
 
-	if (block.typeId === ALTAR_MAIN) ritual(core, block, item);
+	if (block.typeId === ALTAR_MAIN) {
+		ritual(core, block, item);
+	} else if (core.getDynamicProperty(PROP_SENDING) && !voos.some((v) => v.doadorCore.id === core.id)) {
+		// O mundo recarregou no meio de um voo (a lista de voos e so em
+		// memoria) - sem isto este altar nunca mais mandaria energia.
+		core.setDynamicProperty(PROP_SENDING, false);
+	}
 }
+
+// Voos em andamento: cada ametista encontrada vira um destes, e some quando a
+// particula chega no altar principal e entrega a energia de verdade.
+const voos = [];
 
 function ritual(core, block, item) {
 	// So o altar principal, com um catalisador em cima, puxa magia.
 	if (!isCatalyst(item)) return;
 
-	// Uma ametista por segundo, pra dar pra ver a energia subindo.
+	// So um voo por vez pra este altar - sem isso a energia enche rapido
+	// demais e a particula nao da tempo de mostrar nada.
+	if (voos.some((v) => v.core.id === core.id)) return;
+
 	const doador = proximaAmetista(core.dimension, block.location);
 	if (!doador) return;
 
+	// A ametista fica no lugar dela (ainda ametista) enquanto a energia viaja.
+	doador.core.setDynamicProperty(PROP_SENDING, true);
+	voos.push({
+		core,
+		mainLoc: { x: block.location.x, y: block.location.y, z: block.location.z },
+		doadorCore: doador.core,
+		doadorLoc: doador.loc,
+		tique: 0,
+	});
+	core.dimension.playSound("random.orb", displayLocation(doador.loc));
+}
+
+// A cada tique: avanca cada particula um pouco no caminho dela e, quando
+// chega no altar principal, ai sim - so ai - a ametista vira cristal base e o
+// catalisador ganha a fatia de energia dela.
+system.runInterval(() => {
+	for (let i = voos.length - 1; i >= 0; i--) {
+		const voo = voos[i];
+		voo.tique++;
+		const t = Math.min(voo.tique / VOO_DURACAO, 1);
+
+		try {
+			const de = displayLocation(voo.doadorLoc);
+			const para = displayLocation(voo.mainLoc);
+			const pos = {
+				x: de.x + (para.x - de.x) * t,
+				y: de.y + (para.y - de.y) * t + Math.sin(Math.PI * t) * 0.4, // arco leve
+				z: de.z + (para.z - de.z) * t,
+			};
+			voo.core.dimension.spawnParticle(PARTICLE_ENERGY, pos);
+		} catch {
+			// altar sumiu no meio do caminho - a particula so nao aparece;
+			// o voo ainda termina normalmente e o cleanup abaixo decide o resto.
+		}
+
+		if (t >= 1) {
+			terminaVoo(voo);
+			voos.splice(i, 1);
+		}
+	}
+}, 1);
+
+function terminaVoo(voo) {
+	voo.doadorCore.setDynamicProperty(PROP_SENDING, false);
+
+	// Confere se os dois lados continuam do jeito esperado - o jogador pode
+	// ter mexido em algum dos altares enquanto a particula viajava.
+	const aindaTemAmetista = heldItem(voo.doadorCore)?.typeId === AMETHYST;
+	const catalisador = heldItem(voo.core);
+	if (!aindaTemAmetista || !isCatalyst(catalisador)) return;
+
 	// A ametista entrega a magia e fica sendo um cristal base no altar dela.
 	const cristal = new ItemStack(BASE_CRYSTAL, 1);
-	setHeldItem(doador.core, cristal);
-	spawnDisplay(doador.core.dimension, doador.loc, cristal);
-	doador.core.setDynamicProperty(PROP_AGE, 0);
+	setHeldItem(voo.doadorCore, cristal);
+	spawnDisplay(voo.doadorCore.dimension, voo.doadorLoc, cristal);
+	voo.doadorCore.setDynamicProperty(PROP_AGE, 0);
 
 	// Cada ametista vale uma fatia de 100% dividida pelos altares do anel.
-	const antes = energyOf(item);
-	const agora = antes + 100 / RITUAL_CAPACITY;
+	// Arredonda pra 2 casas: 100/12 não é exato em ponto flutuante, e sem
+	// isso a 12a ametista fecha em 99.99999999999999 em vez de 100 - o
+	// catalisador nunca vira o catalisador cheio.
+	const antes = energyOf(catalisador);
+	const agora = Math.round((antes + 100 / RITUAL_CAPACITY) * 100) / 100;
 	const novo = catalystWith(agora);
-	setHeldItem(core, novo);
-	spawnDisplay(core.dimension, block.location, novo);
-	core.setDynamicProperty(PROP_AGE, 0);
+	setHeldItem(voo.core, novo);
+	spawnDisplay(voo.core.dimension, voo.mainLoc, novo);
+	voo.core.setDynamicProperty(PROP_AGE, 0);
 
-	const centro = displayLocation(block.location);
-	core.dimension.playSound("random.orb", centro);
+	const centro = displayLocation(voo.mainLoc);
+	voo.core.dimension.playSound("random.orb", centro);
 	// Passou de 100 agora: o catalisador encheu.
 	if (antes < 100 && agora >= 100) {
-		core.dimension.playSound("beacon.activate", centro);
+		voo.core.dimension.playSound("beacon.activate", centro);
 	}
 }
 
-// Procura, no anel, o primeiro altar secundario com uma ametista em cima.
+// Procura, no anel, o primeiro altar secundario com uma ametista em cima que
+// ainda nao esteja mandando a energia dela pra algum lugar.
 function proximaAmetista(dimension, centro) {
 	for (const { dx, dz } of RING) {
 		const loc = { x: centro.x + dx, y: centro.y, z: centro.z + dz };
@@ -396,6 +456,7 @@ function proximaAmetista(dimension, centro) {
 		if (!block || block.typeId !== ALTAR_SECOND) continue;
 		const core = findCore(dimension, loc);
 		if (!core) continue;
+		if (core.getDynamicProperty(PROP_SENDING)) continue;
 		if (heldItem(core)?.typeId === AMETHYST) return { core, loc };
 	}
 	return undefined;

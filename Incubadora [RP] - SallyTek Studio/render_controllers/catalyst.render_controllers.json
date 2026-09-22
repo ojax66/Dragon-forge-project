@@ -9,12 +9,13 @@
 				}
 			],
 			"textures": [
-				"Array.skins[query.property('sallytek:charged')]"
+				"Array.skins[query.property('sallytek:charge_state')]"
 			],
 			"arrays": {
 				"textures": {
 					"Array.skins": [
 						"Texture.empty",
+						"Texture.charging",
 						"Texture.charged"
 					]
 				}

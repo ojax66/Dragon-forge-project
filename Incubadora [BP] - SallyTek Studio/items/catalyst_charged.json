@@ -1,0 +1,22 @@
+{
+	"format_version": "1.20.80",
+	"minecraft:item": {
+		"description": {
+			"identifier": "sallytek:catalyst_charged",
+			"menu_category": {
+				"category": "items"
+			}
+		},
+		"components": {
+			"minecraft:icon": {
+				"textures": {
+					"default": "sallytek:catalyst_charged"
+				}
+			},
+			"minecraft:max_stack_size": 1,
+			"minecraft:display_name": {
+				"value": "item.sallytek:catalyst_charged.name"
+			}
+		}
+	}
+}

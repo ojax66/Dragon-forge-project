@@ -7,9 +7,10 @@
 			"is_spawnable": false,
 			"is_experimental": false,
 			"properties": {
-				"sallytek:charged": {
-					"type": "bool",
-					"default": false,
+				"sallytek:charge_state": {
+					"type": "int",
+					"range": [0, 2],
+					"default": 0,
 					"client_sync": true
 				}
 			}
@@ -21,6 +22,7 @@
 					"inanimate"
 				]
 			},
+			"minecraft:nameable": {},
 			"minecraft:collision_box": {
 				"width": 0.01,
 				"height": 0.01

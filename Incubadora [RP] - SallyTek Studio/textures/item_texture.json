@@ -2,6 +2,15 @@
 	"texture_name": "atlas.items",
 	"resource_pack_name": "sallytek_incubator",
 	"texture_data": {
+		"sallytek:catalyst": {
+			"textures": "textures/blocks/catalyst"
+		},
+		"sallytek:catalyst_charging": {
+			"textures": "textures/blocks/catalyst_charging"
+		},
+		"sallytek:catalyst_charged": {
+			"textures": "textures/blocks/catalyst_charged"
+		},
 		"sallytek:base_crystal": {
 			"textures": "textures/items/base_crystal"
 		},
